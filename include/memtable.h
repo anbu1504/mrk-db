@@ -56,6 +56,7 @@ public:
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
     void deleteValue(Node * node); // delete value
-    void scanTree(uint64_t min, uint64_t max); // scan method
+    std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
+    std::tuple<uint64_t> getValue(uint64_t); 
     int flushToDisk(std::string filename); // flush to disk
 };
