@@ -15,11 +15,12 @@ using namespace std;
  */
 class Node {
 public:
-    int64_t key;
-    int64_t value;
+    uint64_t key;
+    uint64_t value;
     Node* left;
     Node* right;    
     int height;
+    void deleteNode();
     Node(int64_t k, int64_t v) : key(k), value(v), left(nullptr), right(nullptr), height(1) {}
 };
 
@@ -43,7 +44,7 @@ private:
     Node* rotateLeft(Node* x); // left rotation
     Node* insert(Node* node, int64_t key, int64_t value); // recursive insert
     void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
-    void deleteTree(Node* node); // helper to free memory
+    void deleteTree(); // helper to free memory
 
 public:
     Memtable(size_t threshold); // constructor with threshold
@@ -54,5 +55,5 @@ public:
     void display(); // public display method
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
-    void flushToDisk(); // flush to disk
+    int flushToDisk(std::string filename); // flush to disk
 };
