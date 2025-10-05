@@ -46,7 +46,7 @@ private:
     int getBalance(Node* node); // get balance factor
     void rotateRight(Node* y); // right rotation
     void rotateLeft(Node* x); // left rotation
-    Node* insert(Node* node, uint64_t key, uint64_t value); // recursive insert
+    void insert_real(Node* node, uint64_t key, uint64_t value); // recursive insert
     void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
     void deleteTree(); // helper to free memory
 
@@ -55,7 +55,7 @@ public:
     ~Memtable(); // destructor to free memory
 
     // Public helper functions
-    void insert(uint64_t key, uint64_t value); // public insert method
+    bool insert(uint64_t key, uint64_t value); // public insert method
     void display(); // public display method
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
