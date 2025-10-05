@@ -4,6 +4,7 @@
 #include <string>
 
 class DB {
+public:
     // Open the database 
     int open(const std::string dbName);
 }
