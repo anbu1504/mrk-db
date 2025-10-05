@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <algorithm>
 #include <fstream>
+#include <string>
+#include <vector>
+#include <tuple>
 
 
 /**
@@ -41,8 +44,8 @@ private:
     // Private helper functions
     int height(Node* node); // get height of node
     int getBalance(Node* node); // get balance factor
-    Node* rotateRight(Node* y); // right rotation
-    Node* rotateLeft(Node* x); // left rotation
+    void rotateRight(Node* y); // right rotation
+    void rotateLeft(Node* x); // left rotation
     Node* insert(Node* node, uint64_t key, uint64_t value); // recursive insert
     void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
     void deleteTree(); // helper to free memory

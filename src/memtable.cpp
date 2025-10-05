@@ -32,7 +32,7 @@ void Node::deleteNode() {
 
 uint64_t Node::getValue(uint64_t k) {
     if (key == k){
-        return root->value;
+        return value;
 
     } else if (left && key > k){
         return left->getValue(k);
@@ -86,5 +86,9 @@ std::tuple<uint64_t> Memtable::getValue(uint64_t key) {
     else {
         return root->getValue(key)
     }
+}
+
+std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max){
+
 }
 
