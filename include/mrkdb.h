@@ -40,7 +40,7 @@ public:
      * @param key1 The first key in the key range for which values will be retrieved
      * @param key1 The last key in the key range for which values will be retrieved
      */
-    int Scan(uint64_t key1, uint64_t key2);
+     std::vector<std::tuple<uint64_t, uint64_t>> Scan(uint64_t key1, uint64_t key2);
 
     /**
      * @brief Closes the database.
