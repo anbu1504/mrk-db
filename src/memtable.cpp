@@ -167,3 +167,11 @@ void Memtable::rotateLeft(Node* x) {
     x->height = std::max(height(x->left), height(x->right)) + 1;
     y->height = std::max(height(y->left), height(y->right)) + 1;
 }
+
+size_t Memtable::getSize() {
+    return size;
+}
+
+bool Memtable::isThresholdReached() {
+    return size >= threshold;
+}

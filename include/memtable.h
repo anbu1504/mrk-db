@@ -47,7 +47,6 @@ private:
     void rotateRight(Node* y); // right rotation
     void rotateLeft(Node* x); // left rotation
     void insert_real(Node* node, uint64_t key, uint64_t value); // recursive insert
-    void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
     void deleteTree(); // helper to free memory
 
 public:
@@ -56,10 +55,9 @@ public:
 
     // Public helper functions
     bool insert(uint64_t key, uint64_t value); // public insert method
-    void display(); // public display method
+    void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
-    void deleteValue(Node * node); // delete value
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::tuple<uint64_t> getValue(uint64_t key); 
     int flushToDisk(std::string filename); // flush to disk
