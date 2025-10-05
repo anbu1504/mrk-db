@@ -21,7 +21,7 @@ public:
     Node* right;    
     int height;
     void deleteNode();
-    Node(int64_t k, int64_t v) : key(k), value(v), left(nullptr), right(nullptr), height(1) {}
+    Node(uint64_t k, uint64_t v) : key(k), value(v), left(nullptr), right(nullptr), height(1) {}
 };
 
 /**
@@ -38,11 +38,11 @@ private:
     size_t threshold;
 
     // Private helper functions
-    int height(Node* N); // get height of node
-    int getBalance(Node* N); // get balance factor
+    int height(Node* node); // get height of node
+    int getBalance(Node* node); // get balance factor
     Node* rotateRight(Node* y); // right rotation
     Node* rotateLeft(Node* x); // left rotation
-    Node* insert(Node* node, int64_t key, int64_t value); // recursive insert
+    Node* insert(Node* node, uint64_t key, uint64_t value); // recursive insert
     void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
     void deleteTree(); // helper to free memory
 
@@ -51,9 +51,11 @@ public:
     ~Memtable(); // destructor to free memory
 
     // Public helper functions
-    void insert(int64_t key, int64_t value); // public insert method
+    void insert(uint64_t key, uint64_t value); // public insert method
     void display(); // public display method
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
+    void deleteValue(Node * node); // delete value
+    void scanTree(uint64_t min, uint64_t max); // scan method
     int flushToDisk(std::string filename); // flush to disk
 };

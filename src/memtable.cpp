@@ -47,15 +47,16 @@ void Node::deleteNode() {
 /**
  * @brief Get the height of a node.
  */
-int Memtable::height(Node* N) {
-    if (N == nullptr)
+uint64_t Memtable::height(Node* node) {
+    if (node == nullptr)
         return 0;
-    return N->height;
+    return node->height;
 }
 
 /**
  * @brief Method to get the balance factor of the tree
  */
+int Memtable::getBalance(Node* node) {}
 
 
 
