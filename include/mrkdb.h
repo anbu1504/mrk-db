@@ -1,5 +1,4 @@
-#ifndef MRKDB_H
-#define MRKDB_H
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -38,6 +37,4 @@ public:
     //
     // @param dbName Name of the database to open
     int Close();
-}
-
-#endif // MRKDB_H
+};
