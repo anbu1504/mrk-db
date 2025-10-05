@@ -63,3 +63,6 @@ int Memtable::getBalance(Node* node) {
     return height(node->left) - height(node->right);
 }
 
+// Node* Memtable::rotateRight(Node *y) {
+//     Node* x = y->left
+// }

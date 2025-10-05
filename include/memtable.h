@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <algorithm>
 #include <fstream>
-using namespace std;
+#include <string>
+#include <vector>
+#include <tuple>
 
 /**
  * @class Node
