@@ -29,6 +29,22 @@ void Node::deleteNode() {
     }
     
 }
+
+uint64_t Node::getValue(uint64_t k) {
+    if (key == k){
+        return root->value;
+
+    } else if (left && key > k){
+        return left->getValue(k);
+
+    } else if (right && key < k) {
+        return right->getValue(k);
+    }
+
+    if (!left && !right){
+        return NULL;
+    }
+}
  
 /**
  * @brief Method to recursively delete the entire AVL tree
@@ -63,6 +79,12 @@ int Memtable::getBalance(Node* node) {
     return height(node->left) - height(node->right);
 }
 
-// Node* Memtable::rotateRight(Node *y) {
-//     Node* x = y->left
-// }
+std::tuple<uint64_t> Memtable::getValue(uint64_t key) {
+    if (!root){
+        return NULL;
+    }
+    else {
+        return root->getValue(key)
+    }
+}
+
