@@ -37,17 +37,18 @@ public:
  * when the number of entries reaches the memtable_size threshold.
  */
 class Memtable {
+    friend class MemtableTester; // to be used in tester
 private:
     Node* root;
     size_t size;
     size_t threshold;
 
     // Private helper functions
+    Node* insertReal(Node* node, uint64_t key, uint64_t value); // recursive insert
     int height(Node* node); // get height of node
     int getBalance(Node* node); // get balance factor
-    void rotateRight(Node* y); // right rotation
-    void rotateLeft(Node* x); // left rotation
-    void insert_real(Node* node, uint64_t key, uint64_t value); // recursive insert
+    Node* rotateRight(Node* y); // right rotation
+    Node* rotateLeft(Node* x); // left rotation
     void deleteTree(); // helper to free memory
 
 public:
@@ -62,4 +63,5 @@ public:
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::tuple<uint64_t,std::optional<uint64_t>> getValue(uint64_t key); 
     int flushToDisk(std::string filename); // flush to disk
+    Node* getRoot(); // get root of memtable
 };

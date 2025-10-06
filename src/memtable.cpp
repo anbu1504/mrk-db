@@ -59,6 +59,8 @@ std::optional<uint64_t> Node::getValue(uint64_t k) {
     else {
         root->deleteNode();
         delete root;
+        root = nullptr;
+        size = 0;
     }
  }
 
@@ -97,38 +99,39 @@ std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max)
 /**
  * @brief Helper method to insert recursively
  */
-void Memtable::insert_real(Node* node, uint64_t key, uint64_t value) {
+Node* Memtable::insertReal(Node* node, uint64_t key, uint64_t value) {
     
     if (node == nullptr) {
-        node = new Node(key, value);
         size++;
+        return new Node(key, value);
     }
     
     if (key < node->key) {
-        insert_real(node->left, key, value);
+        node->left = insertReal(node->left, key, value);
     }
-    if (key > node->key) {
-        insert_real(node->right, key, value);
+    else if (key > node->key) {
+        node->right = insertReal(node->right, key, value);
     }    
     node->height = 1 + std::max(height(node->left), height(node->right));
 
     int balance = getBalance(node);
 
     if (balance < -1 && key < node->left->key)
-        rotateRight(node);
+        return rotateRight(node);
 
     if (balance > 1 && key > node->right->key)
-        rotateLeft(node);
+        return rotateLeft(node);
 
     if (balance < -1 && key > node->left->key) {
-        rotateLeft(node->left);
-        rotateRight(node);
+        node->left = rotateLeft(node->left);
+        return rotateRight(node);
     }
 
     if (balance > 1 && key < node->right->key) {
-        rotateRight(node->right);
-        rotateLeft(node);
+        node->right = rotateRight(node->right);
+        return rotateLeft(node);
     }
+    return node;
 }
 
 /** 
@@ -138,14 +141,14 @@ bool Memtable::insert(uint64_t key, uint64_t value) {
     if (isThresholdReached()) {
         return false;
     }
-    insert_real(root, key, value);
+    root = insertReal(root, key, value);
     return true;
 }
 
 /**
  * @brief Method to rotate right
  */
-void Memtable::rotateRight(Node* y) {
+Node* Memtable::rotateRight(Node* y) {
     Node* x = y->left;
     Node* T2 = x->right;
 
@@ -154,12 +157,14 @@ void Memtable::rotateRight(Node* y) {
 
     y->height = std::max(height(y->left), height(y->right)) + 1;
     x->height = std::max(height(x->left), height(x->right)) + 1;
+    
+    return x;
 }
 
 /**
  * @brief Method to rotate left
  */
-void Memtable::rotateLeft(Node* x) {
+Node* Memtable::rotateLeft(Node* x) {
     Node* y = x->right;
     Node* T2 = y->left;
 
@@ -168,6 +173,8 @@ void Memtable::rotateLeft(Node* x) {
 
     x->height = std::max(height(x->left), height(x->right)) + 1;
     y->height = std::max(height(y->left), height(y->right)) + 1;
+
+    return y;
 }
 
 size_t Memtable::getSize() {
@@ -177,3 +184,8 @@ size_t Memtable::getSize() {
 bool Memtable::isThresholdReached() {
     return size >= threshold;
 }
+
+Node* Memtable::getRoot() {
+    return root;
+}
+
