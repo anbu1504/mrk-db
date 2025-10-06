@@ -116,11 +116,13 @@ Node* Memtable::insertReal(Node* node, uint64_t key, uint64_t value) {
 
     int balance = getBalance(node);
 
-    if (balance < -1 && key < node->left->key)
+    if (balance < -1 && key < node->left->key) {
         return rotateRight(node);
+    }
 
-    if (balance > 1 && key > node->right->key)
+    if (balance > 1 && key > node->right->key) {
         return rotateLeft(node);
+    }
 
     if (balance < -1 && key > node->left->key) {
         node->left = rotateLeft(node->left);
