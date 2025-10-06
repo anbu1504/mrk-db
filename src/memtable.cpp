@@ -99,24 +99,17 @@ std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max)
  */
 void Memtable::insert_real(Node* node, uint64_t key, uint64_t value) {
     
-    std::cout << "Inside insert real" << std::endl;
     if (node == nullptr) {
         node = new Node(key, value);
         size++;
     }
-    std::cout << "Checking insert left" << std::endl;
-    std::cout << "Key: " << key << std::endl;
-    std::cout << "node->key: " << node->key << std::endl;
+    
     if (key < node->key) {
-        std::cout << "Entering insert real left" << std::endl;
         insert_real(node->left, key, value);
     }
-    std::cout << "Checking insert right" << std::endl;
     if (key > node->key) {
         insert_real(node->right, key, value);
-    }
-    
-    std::cout << "Starting insert" << std::endl;
+    }    
     node->height = 1 + std::max(height(node->left), height(node->right));
 
     int balance = getBalance(node);
@@ -145,7 +138,6 @@ bool Memtable::insert(uint64_t key, uint64_t value) {
     if (isThresholdReached()) {
         return false;
     }
-    std::cout << "Before insert real" << std::endl;
     insert_real(root, key, value);
     return true;
 }
