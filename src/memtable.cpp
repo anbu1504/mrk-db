@@ -55,7 +55,7 @@ void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, 
 
     if (node->key < min){
         scanTreeRec(entries, node->left, min, max);
-    } else if (min <= node->key <= max){
+    } else if (node->key >= min && node->key <= max){
         entries.push_back(std::make_tuple(node->key, node->value));
     } else {
         scanTreeRec(entries, node->right, min, max);
@@ -112,7 +112,7 @@ std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uin
 /**
  * @brief Helper method to insert recursively
  */
-Node* Memtable::insertReal(Node* node, uint64_t key, uint64_t value) {
+Node* Memtable::insertRec(Node* node, uint64_t key, uint64_t value) {
     
     if (node == nullptr) {
         size++;
@@ -120,10 +120,10 @@ Node* Memtable::insertReal(Node* node, uint64_t key, uint64_t value) {
     }
     
     if (key < node->key) {
-        node->left = insertReal(node->left, key, value);
+        node->left = insertRec(node->left, key, value);
     }
     else if (key > node->key) {
-        node->right = insertReal(node->right, key, value);
+        node->right = insertRec(node->right, key, value);
     }    
     node->height = 1 + std::max(height(node->left), height(node->right));
 
@@ -156,7 +156,7 @@ bool Memtable::insert(uint64_t key, uint64_t value) {
     if (isThresholdReached()) {
         return false;
     }
-    root = insertReal(root, key, value);
+    root = insertRec(root, key, value);
     return true;
 }
 

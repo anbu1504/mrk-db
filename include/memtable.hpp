@@ -43,7 +43,7 @@ private:
     size_t threshold;
 
     // Private helper functions
-    Node* insertReal(Node* node, uint64_t key, uint64_t value); // recursive insert
+    Node* insertRec(Node* node, uint64_t key, uint64_t value); // recursive insert
     int height(Node* node); // get height of node
     int getBalance(Node* node); // get balance factor
     Node* rotateRight(Node* y); // right rotation
