@@ -32,19 +32,33 @@ void Node::deleteNode() {
     
 }
 
-std::optional<uint64_t> Node::getValue(uint64_t k) {
-    if (key == k){
-        return value;
-
-    } else if (left && key > k){
-        return left->getValue(k);
-
-    } else if (right && key < k) {
-        return right->getValue(k);
+std::optional<uint64_t> Memtable::getValueRec(Node* node, uint64_t k) {
+    if (node == nullptr){
+        return std::nullopt;
     }
 
-    else {
-        return std::nullopt;
+    if (node->key == k){
+        return node->value;
+
+    } else if (node->key > k){
+        return getValueRec(node->left, k);
+
+    } else {
+        return getValueRec(node->right, k);
+    } 
+}
+
+void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node, uint64_t min, uint64_t max) {
+    if (node == nullptr){
+        return;
+    }
+
+    if (node->key < min){
+        scanTreeRec(entries, node->left, min, max);
+    } else if (min <= node->key <= max){
+        entries.push_back(std::make_tuple(node->key, node->value));
+    } else {
+        scanTreeRec(entries, node->right, min, max);
     }
 }
  
@@ -84,16 +98,15 @@ int Memtable::getBalance(Node* node) {
 }
 
 std::tuple<uint64_t,std::optional<uint64_t>> Memtable::getValue(uint64_t key) {
-    if (!root){
-        return std::make_tuple(key, std::nullopt);
-    }
-    else {
-        return std::make_tuple(key, root->getValue(key));
-    }
+    return std::make_tuple(key, getValueRec(root, key));
 }
 
-std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max){
-    
+std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uint64_t max){
+    std::vector<std::tuple<uint64_t, uint64_t>> entries;
+
+    scanTreeRec(entries, root, min, max);
+
+    return entries;
 }
 
 /**

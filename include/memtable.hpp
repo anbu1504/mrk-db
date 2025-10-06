@@ -25,7 +25,6 @@ public:
     Node* right;    
     int height;
     void deleteNode();
-    std::optional<uint64_t> getValue(uint64_t key);     
     Node(uint64_t k, uint64_t v) : key(k), value(v), left(nullptr), right(nullptr), height(1) {}
 };
 
@@ -50,6 +49,8 @@ private:
     Node* rotateRight(Node* y); // right rotation
     Node* rotateLeft(Node* x); // left rotation
     void deleteTree(); // helper to free memory
+    void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node, uint64_t min, uint64_t max); // recurive scan
+    std::optional<uint64_t> getValueRec(Node* node, uint64_t k); // recursive get value 
 
 public:
     Memtable(size_t threshold); // constructor with threshold
