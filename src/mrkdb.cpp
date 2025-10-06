@@ -10,9 +10,9 @@ int DB::Open(const std::string dbName) {
     memtable = new Memtable(threshold);
     sstCount = 0;
 
-    bool created_file = std::filesystem::create_directory(dbName);
+    bool created_dir = std::filesystem::create_directory(dbName);
 
-    if (!created_file) {
+    if (!created_dir) {
         std::ifstream memtableSst(databaseName + "/" + MEMTABLE_SST_FILENAME);
 
         if (memtableSst.is_open()) {
