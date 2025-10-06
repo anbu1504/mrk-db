@@ -8,7 +8,7 @@
 #include <filesystem>
 
 // Number of keys, corresponds to flushing 16kb of data to SSTs
-#define threshold 4096
+#define THRESHOLD 4096
 
 /**
  * @class DB
@@ -16,9 +16,12 @@
  */
 class DB {
 private:
+    int sstCount;
     std::string databaseName;
     Memtable* memtable;
-    int sstCount;
+
+    // Private helper functions
+    int sstBinSearch(uint64_t key, int fd);
 
 public:
     /**
