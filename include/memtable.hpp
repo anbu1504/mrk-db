@@ -51,6 +51,7 @@ private:
     void deleteTree(); // helper to free memory
     void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node, uint64_t min, uint64_t max); // recurive scan
     std::optional<uint64_t> getValueRec(Node* node, uint64_t k); // recursive get value 
+    void inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node); // recursive inorder traversal
 
 public:
     Memtable(size_t threshold); // constructor with threshold
@@ -58,7 +59,7 @@ public:
 
     // Public helper functions
     bool insert(uint64_t key, uint64_t value); // public insert method
-    void inorderTraversal(Node* root, std::ofstream& ofs); // helper for display
+    std::vector<std::tuple<uint64_t, uint64_t>> inorderTraversal(); // helper for display
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
