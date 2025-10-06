@@ -65,4 +65,5 @@ public:
     std::tuple<uint64_t,std::optional<uint64_t>> getValue(uint64_t key); 
     int flushToDisk(std::string filename); // flush to disk
     Node* getRoot(); // get root of memtable
+    bool isEmpty(); // helper function for checking if empty
 };

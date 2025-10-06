@@ -204,3 +204,7 @@ Node* Memtable::getRoot() {
     return root;
 }
 
+bool Memtable::isEmpty() {
+    return size == 0;
+}
+
