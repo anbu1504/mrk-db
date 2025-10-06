@@ -1,7 +1,9 @@
-#include "memtable.h"
+#include "../include/memtable.hpp"
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <optional>
+
 
 /**
  * @brief Constructor to initialize the memtable with a size threshold.
@@ -20,17 +22,17 @@ Memtable::~Memtable() {
 void Node::deleteNode() {
     if (left) {
         left->deleteNode();
-        free(left);
+        delete left;
     }
 
     if (right) {
         right->deleteNode();
-        free(right);
+        delete right;
     }
     
 }
 
-uint64_t Node::getValue(uint64_t k) {
+std::optional<uint64_t> Node::getValue(uint64_t k) {
     if (key == k){
         return value;
 
@@ -41,8 +43,8 @@ uint64_t Node::getValue(uint64_t k) {
         return right->getValue(k);
     }
 
-    if (!left && !right){
-        return NULL;
+    else {
+        return std::nullopt;
     }
 }
  
@@ -56,7 +58,7 @@ uint64_t Node::getValue(uint64_t k) {
     }
     else {
         root->deleteNode();
-        free(root);
+        delete root;
     }
  }
 
@@ -79,35 +81,42 @@ int Memtable::getBalance(Node* node) {
     return height(node->right) - height(node->left);
 }
 
-std::tuple<uint64_t> Memtable::getValue(uint64_t key) {
+std::tuple<uint64_t,std::optional<uint64_t>> Memtable::getValue(uint64_t key) {
     if (!root){
-        return NULL;
+        return std::make_tuple(key, std::nullopt);
     }
     else {
-        return root->getValue(key);
+        return std::make_tuple(key, root->getValue(key));
     }
 }
 
 std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max){
-
+    
 }
 
 /**
  * @brief Helper method to insert recursively
  */
 void Memtable::insert_real(Node* node, uint64_t key, uint64_t value) {
+    
+    std::cout << "Inside insert real" << std::endl;
     if (node == nullptr) {
+        node = new Node(key, value);
         size++;
     }
-
+    std::cout << "Checking insert left" << std::endl;
+    std::cout << "Key: " << key << std::endl;
+    std::cout << "node->key: " << node->key << std::endl;
     if (key < node->key) {
+        std::cout << "Entering insert real left" << std::endl;
         insert_real(node->left, key, value);
     }
-
+    std::cout << "Checking insert right" << std::endl;
     if (key > node->key) {
         insert_real(node->right, key, value);
     }
-
+    
+    std::cout << "Starting insert" << std::endl;
     node->height = 1 + std::max(height(node->left), height(node->right));
 
     int balance = getBalance(node);
@@ -136,6 +145,7 @@ bool Memtable::insert(uint64_t key, uint64_t value) {
     if (isThresholdReached()) {
         return false;
     }
+    std::cout << "Before insert real" << std::endl;
     insert_real(root, key, value);
     return true;
 }

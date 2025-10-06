@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <optional>
 
 
 /**
@@ -24,7 +25,7 @@ public:
     Node* right;    
     int height;
     void deleteNode();
-    uint64_t getValue(uint64_t key);     
+    std::optional<uint64_t> getValue(uint64_t key);     
     Node(uint64_t k, uint64_t v) : key(k), value(v), left(nullptr), right(nullptr), height(1) {}
 };
 
@@ -59,6 +60,6 @@ public:
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
-    std::tuple<uint64_t> getValue(uint64_t key); 
+    std::tuple<uint64_t,std::optional<uint64_t>> getValue(uint64_t key); 
     int flushToDisk(std::string filename); // flush to disk
 };
