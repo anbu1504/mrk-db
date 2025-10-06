@@ -1,16 +1,25 @@
 #pragma once
 
+#include "memtable.hpp"
 #include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>
 #include <filesystem>
 
+// Number of keys, corresponds to flushing 16kb of data to SSTs
+#define threshold 4096
+
 /**
  * @class DB
  * @brief The MRK-DB database class.
  */
 class DB {
+private:
+    std::string databaseName;
+    Memtable* memtable;
+    int sstCount;
+
 public:
     /**
      * @brief Opens the database and prepares it to run.
