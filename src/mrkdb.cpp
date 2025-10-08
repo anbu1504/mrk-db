@@ -6,39 +6,14 @@
 #define MEMTABLE_SST_FILENAME "0.sst"
 #define METADATA_FILENAME ".metadata"
 
-#define SST_SIZE 16384
 #define PAGE_SIZE 4096
-#define VALUE_SIZE 8
-
-// 8 bytes per entry, 2 entries per KV-pair
-#define IDX_TO_BYTES(i) (i * 2 * 8)
 
 int DB::Open(const std::string dbName) {
-    sstCount = 0;
     databaseName = dbName;
     memtable = new Memtable(THRESHOLD);
+    sstCount = 0;
 
-    bool created_dir = std::filesystem::create_directory(dbName);
-
-    if (!created_dir) {
-        std::ifstream memtableSst(databaseName + "/" + MEMTABLE_SST_FILENAME);
-
-        if (memtableSst.is_open()) {
-            uint64_t key;
-            uint64_t value;
-
-            while (!memtableSst.eof()) {
-                memtableSst >> key;
-                memtableSst >> value;
-
-                memtable->insert(key, value);
-            }
-
-            memtableSst.close();
-
-            std::filesystem::remove(databaseName + "/" + MEMTABLE_SST_FILENAME);
-        }
-
+    if (!std::filesystem::create_directory(dbName)) { // If the DB already exists
         std::ifstream metadataFile(databaseName + "/" + METADATA_FILENAME);
 
         if (metadataFile.is_open()) {
@@ -60,9 +35,7 @@ uint64_t DB::Get(uint64_t key) {
     // If we get to this point, then the key doesn't exist in the memtable
     uint64_t sstValue;
 
-
-
-
+    return 0;
 }
 
 int DB::Put(uint64_t key, uint64_t value) {
@@ -73,12 +46,13 @@ int DB::Put(uint64_t key, uint64_t value) {
         memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
     }
 
-    return success;
+    return !success; // 0 for success, 1 for failure
 };
 
 int DB::Close() {
     if (!memtable->isEmpty()) {
-        memtable->flushToDisk(databaseName + "/" + MEMTABLE_SST_FILENAME);
+        sstCount++;
+        memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
     }
 
     std::ofstream metadataFile(databaseName + "/" + METADATA_FILENAME);
@@ -95,35 +69,5 @@ int DB::Close() {
 };
 
 int DB::sstBinSearch(uint64_t key, int fd) {
-    int lo = 0;
-    int hi = SST_SIZE / PAGE_SIZE;
-
-    int vals_per_page = PAGE_SIZE / VALUE_SIZE;
-
-    uint64_t curr_idx = (lo + hi) / 2;
-    uint64_t curr_page[vals_per_page];
-
-    bool found_page = false;
-
-    while (!found_page) {
-        ssize_t ret = pread(fd, &curr_page, PAGE_SIZE, curr_idx * PAGE_SIZE);
-
-        if (curr_page[0] > key && curr_idx != 0) {
-            hi = curr_idx;
-            curr_idx = (lo + hi) / 2;
-        } else if (curr_page[vals_per_page - 2] < key && curr_idx != (hi - 1)) {
-            lo = curr_idx;
-            curr_idx = (lo + hi) / 2;
-        }
-        // to be cont.
-        
-    }
-
-
-
-
-
-
-
-
+    return 0;
 }

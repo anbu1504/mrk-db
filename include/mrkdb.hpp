@@ -7,8 +7,9 @@
 #include <vector>
 #include <filesystem>
 
-// Number of keys, corresponds to flushing 16kb of data to SSTs
-#define THRESHOLD 4096
+// Number of keys, corresponds to flushing 64kb of data to SSTs
+// (i.e., 16 pages worth of data) (we plan to also store 1 page for metadata)
+#define THRESHOLD 16384
 
 /**
  * @class DB
@@ -16,9 +17,15 @@
  */
 class DB {
 private:
-    int sstCount;
+    // Name of the database
     std::string databaseName;
+
+    // Memtable (binary tree)
     Memtable* memtable;
+
+    // Number of SSTs (and number of entries in each SST)
+    int sstCount;
+    std::vector<int> sstEntryNums;
 
     // Private helper functions
     int sstBinSearch(uint64_t key, int fd);
