@@ -97,8 +97,8 @@ int Memtable::getBalance(Node* node) {
     return height(node->right) - height(node->left);
 }
 
-std::tuple<uint64_t,std::optional<uint64_t>> Memtable::getValue(uint64_t key) {
-    return std::make_tuple(key, getValueRec(root, key));
+std::optional<uint64_t> Memtable::getValue(uint64_t key) {
+    return getValueRec(root, key);
 }
 
 std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uint64_t max){
