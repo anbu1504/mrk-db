@@ -25,7 +25,7 @@ private:
 
     // Number of SSTs (and number of entries in each SST)
     int sstCount;
-    std::vector<int> sstEntryNums;
+    std::vector<size_t> sstEntryCounts;
 
     // Private helper functions
     int sstBinSearch(uint64_t key, int fd);
