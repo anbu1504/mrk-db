@@ -238,3 +238,7 @@ bool Memtable::isEmpty() {
     return size == 0;
 }
 
+size_t flushToDisk(std::string filename) {
+    return 0;
+}
+

@@ -16,6 +16,7 @@
  * @brief The MRK-DB database class.
  */
 class DB {
+    friend class DBTester;
 private:
     // Name of the database
     std::string databaseName;
