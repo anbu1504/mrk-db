@@ -3,10 +3,9 @@
 #include <fstream>
 #include <unistd.h>
 
-#define MEMTABLE_SST_FILENAME "0.sst"
 #define METADATA_FILENAME ".metadata"
-
 #define PAGE_SIZE 4096
+#define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
 
 int DB::Open(const std::string dbName) {
     databaseName = dbName;
@@ -19,6 +18,19 @@ int DB::Open(const std::string dbName) {
         if (metadataFile.is_open()) {
             metadataFile >> sstCount;
             metadataFile.close();
+        }
+
+        for (int i = 0; i < sstCount; i++) {
+            size_t entryCount;
+            std::ifstream sstFile(databaseName + "/" + std::to_string(i) + ".sst");
+
+            if (sstFile.is_open()) {
+                sstFile >> entryCount;
+                sstEntryCounts.push_back(entryCount);
+                sstFile.close();
+            } else {
+                return 1; // Error: This SST should exist
+            }
         }
     }
 
@@ -42,8 +54,9 @@ int DB::Put(uint64_t key, uint64_t value) {
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
+        size_t entryCount = memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
+        sstEntryCounts.push_back(entryCount);
         sstCount++;
-        memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
     }
 
     return !success; // 0 for success, 1 for failure
@@ -51,9 +64,11 @@ int DB::Put(uint64_t key, uint64_t value) {
 
 int DB::Close() {
     if (!memtable->isEmpty()) {
-        sstCount++;
         memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
+        sstCount++;
     }
+
+    delete memtable;
 
     std::ofstream metadataFile(databaseName + "/" + METADATA_FILENAME);
 
@@ -62,8 +77,6 @@ int DB::Close() {
         metadataFile << std::endl;
         metadataFile.close();
     }
-
-    delete memtable;
 
     return 0;
 };
