@@ -216,7 +216,7 @@ public:
         m.insert(6, 60);
         m.insert(8, 80);
 
-        auto entries = m.inorderTraversal();
+        auto entries = m.inorderTraversalDel();
 
         std::vector<uint64_t> expectedKeys = {2, 3, 4, 5, 6, 7, 8};
         std::vector<uint64_t> expectedValues = {20, 30, 40, 50, 60, 70, 80};
@@ -229,6 +229,8 @@ public:
             assert(key == expectedKeys[i]);
             assert(value == expectedValues[i]);
         }
+
+        assert(!m.isEmpty());
 
         std::cout << "Inorder traversal output:\n";
         for (auto &[k, v] : entries)
