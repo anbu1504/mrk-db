@@ -11,6 +11,8 @@
 // (i.e., 16 pages worth of data) (we plan to also store 1 page for metadata)
 #define THRESHOLD 16384
 
+typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
+
 /**
  * @class DB
  * @brief The MRK-DB database class.
@@ -24,12 +26,14 @@ private:
     // Memtable (binary tree)
     Memtable* memtable;
 
-    // Number of SSTs (and number of entries in each SST)
+    // Number of SSTs
     int sstCount;
-    std::vector<size_t> sstEntryCounts;
+
+    // For each SST, records a tuple of <numEntries, minKey, maxKey>
+    std::vector<std::tuple<size_t, uint64_t, uint64_t>> sstMetadataCache;
 
     // Private helper functions
-    int sstBinSearch(uint64_t key, int fd);
+    std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t> keys, int sstNum);
 
 public:
     /**
@@ -61,7 +65,7 @@ public:
      * @param key1 The first key in the key range for which values will be retrieved
      * @param key1 The last key in the key range for which values will be retrieved
      */
-     std::vector<std::tuple<uint64_t, uint64_t>> Scan(uint64_t key1, uint64_t key2);
+    kvPairs Scan(uint64_t key1, uint64_t key2);
 
     /**
      * @brief Closes the database.

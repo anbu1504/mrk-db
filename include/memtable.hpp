@@ -64,7 +64,7 @@ public:
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::optional<uint64_t> getValue(uint64_t key); 
-    size_t flushToDisk(std::string filename); // flush to disk
+    std::tuple<size_t, uint64_t, uint64_t>  flushToDisk(std::string filename); // flush to disk
     Node* getRoot(); // get root of memtable
     bool isEmpty(); // helper function for checking if empty
 };

@@ -1,11 +1,16 @@
+#define _ALL_SOURCE // Needed for O_DIRECT(?)
+
 #include "../include/mrkdb.hpp"
+#include <algorithm>
 #include <filesystem>
+#include <fcntl.h> // Also needed for O_DIRECT(?)
 #include <fstream>
 #include <unistd.h>
 
 #define METADATA_FILENAME ".metadata"
 #define PAGE_SIZE 4096
 #define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
+
 
 int DB::Open(const std::string dbName) {
     databaseName = dbName;
@@ -22,11 +27,15 @@ int DB::Open(const std::string dbName) {
 
         for (int i = 0; i < sstCount; i++) {
             size_t entryCount;
-            std::ifstream sstFile(databaseName + "/" + std::to_string(i) + ".sst");
+            uint64_t minKey;
+            uint64_t maxKey;
+            std::ifstream sstFile(SST_PATH(i));
 
             if (sstFile.is_open()) {
                 sstFile >> entryCount;
-                sstEntryCounts.push_back(entryCount);
+                sstFile >> minKey;
+                sstFile >> maxKey;
+                sstMetadataCache.push_back(std::make_tuple(entryCount, minKey, maxKey));
                 sstFile.close();
             } else {
                 return 1; // Error: This SST should exist
@@ -54,8 +63,8 @@ int DB::Put(uint64_t key, uint64_t value) {
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
-        size_t entryCount = memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
-        sstEntryCounts.push_back(entryCount);
+        std::tuple<size_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDisk(SST_PATH(sstCount));
+        sstMetadataCache.push_back(sstMetadata);
         sstCount++;
     }
 
@@ -64,7 +73,7 @@ int DB::Put(uint64_t key, uint64_t value) {
 
 int DB::Close() {
     if (!memtable->isEmpty()) {
-        memtable->flushToDisk(databaseName + "/" + std::to_string(sstCount) + ".sst");
+        memtable->flushToDisk(SST_PATH(sstCount));
         sstCount++;
     }
 
@@ -81,6 +90,118 @@ int DB::Close() {
     return 0;
 };
 
-int DB::sstBinSearch(uint64_t key, int fd) {
-    return 0;
+// Binary search in the SST corresponding to sstNum, to find the provided keys
+// Returns a tuple of: (1) Vector of KV pairs that were found in the SST, and (2) Keys that weren't found in the SST
+std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t> keys, int sstNum) {
+    kvPairs foundPairs;
+    std::vector<uint64_t> keysNotFound;
+    std::vector<uint64_t> keysToFind;
+
+    auto [entryCount, minKey, maxKey] = sstMetadataCache[sstNum];
+
+    // Filter out keys that are outside the range of this SST
+    for (int i = 0; i < keys.size(); i++) {
+        if (keys[i] < minKey || keys[i] > maxKey) {
+            keysNotFound.push_back(keys[i]);
+        } else {
+            keysToFind.push_back(keys[i]);
+        }
+    }
+
+    // If we have no keys to look for in this SST, then no need to do any I/O here
+    if (keysToFind.empty()) {
+        return std::make_tuple(foundPairs, keysNotFound);
+    }
+
+    // Reverse our keysToFind list, since popping from the back is O(1)
+    std::reverse(keysToFind.begin(), keysToFind.end());
+
+
+    uint64_t currKey = keysToFind.back();
+    int fd = open(SST_PATH(sstNum).c_str(), O_RDONLY); // | O_DIRECT);
+
+    // Division to obtain number of pages, rounded UP to nearest whole num
+    // We multiply entryCount by 2 because there's a Key and Value for each "entry"
+    int numPages = (entryCount * 2) / PAGE_SIZE + ((entryCount * 2) % PAGE_SIZE != 0);
+
+    int lo = 1;
+    int hi = numPages;
+    int mid;
+
+    uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)];
+    ssize_t bytesRead;
+    int itemsRead;
+
+    // Binary search to find the correct page
+    while (lo <= hi) {
+        mid = lo + (hi - lo) / 2;
+
+        bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * mid); // assert(bytesRead > 0)
+        itemsRead = bytesRead / sizeof(uint64_t);
+
+        if (currKey < pageBuf[0]) {
+            hi = mid - 1;
+        } else if (currKey > pageBuf[itemsRead - 2]) {
+            lo = mid + 1;
+        } else {
+            break; // We found the page that would contain the first key
+        }
+    }
+
+    int keysRead = itemsRead / 2;
+
+    lo = 0;
+    hi = keysRead - 1;
+    int mid2;
+    uint64_t midKey;
+
+    // Binary search to find the correct key within pageBuf
+    while (lo <= hi) {
+        mid2 = lo + (hi - lo) / 2;
+
+        midKey = pageBuf[mid2 * 2];
+
+        if (currKey < midKey) {
+            hi = mid2 - 1;
+        } else if (currKey > midKey) {
+            lo = mid2 + 1;
+        } else {
+            break;
+        }
+    }
+
+    // At this point, mid2 is either equal to the index of currKey itself,
+    // or the next smallest key after currKey (if currKey wasn't found)
+
+    while (!keysToFind.empty()) {
+        currKey = keysToFind.back();
+        midKey = pageBuf[mid2 * 2];
+
+        while (midKey < currKey) {
+            mid2++;
+
+            // If mid2 is out of bounds, read next page and set mid2 to 0
+            if (mid2 >= keysRead) {
+                mid++;
+                bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * mid);
+                itemsRead = bytesRead / sizeof(uint64_t);
+                keysRead = itemsRead / 2;
+
+                mid2 = 0;
+            }
+
+            midKey = pageBuf[mid2 * 2];
+        }
+
+        // Now, midKey >= currKey
+        if (midKey == currKey) {
+            foundPairs.push_back(std::make_tuple(midKey, pageBuf[mid2 * 2 + 1]));
+        } else {
+            keysNotFound.push_back(currKey);
+        }
+
+        keysToFind.pop_back();
+    }
+
+    return std::make_tuple(foundPairs, keysNotFound);
 }

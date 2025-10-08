@@ -238,7 +238,7 @@ bool Memtable::isEmpty() {
     return size == 0;
 }
 
-size_t flushToDisk(std::string filename) {
-    return 0;
+std::tuple<size_t, uint64_t, uint64_t> flushToDisk(std::string filename) {
+    return std::make_tuple(0, 0, 0);
 }
 
