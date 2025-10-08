@@ -204,20 +204,32 @@ Node* Memtable::getRoot() {
     return root;
 }
 
-void Memtable::inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node){
-    if (node == nullptr){
-        return;
+void Memtable::inorderTraversalDelRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node){
+
+    if (node->left != nullptr){
+        inorderTraversalDelRec(entries, node->left);
+        delete node->left;
+        node->left = nullptr;
     }
 
-    inorderTraversalRec(entries, node->left);
     entries->push_back(std::make_tuple(node->key, node->value));
-    inorderTraversalRec(entries, node->right);
+
+    if (node->right != nullptr){
+        inorderTraversalDelRec(entries, node->right);
+        delete node->right;
+        node->right = nullptr;
+    }
 }
 
-std::vector<std::tuple<uint64_t, uint64_t>> Memtable::inorderTraversal(){
+std::vector<std::tuple<uint64_t, uint64_t>> Memtable::inorderTraversalDel(){
     std::vector<std::tuple<uint64_t, uint64_t>> entries;
 
-    inorderTraversalRec(&entries, root);
+    if (root != nullptr){
+        inorderTraversalDelRec(&entries, root);
+        delete root;
+        root = nullptr;
+        size = 0;
+    }
 
     return entries;
 }

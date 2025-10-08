@@ -50,8 +50,9 @@ private:
     Node* rotateLeft(Node* x); // left rotation
     void deleteTree(); // helper to free memory
     void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node, uint64_t min, uint64_t max); // recurive scan
-    std::optional<uint64_t> getValueRec(Node* node, uint64_t k); // recursive get value 
-    void inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node); // recursive inorder traversal
+    std::optional<uint64_t> getValueRec(Node* node, uint64_t k); // recursive get value
+    std::vector<std::tuple<uint64_t, uint64_t>> inorderTraversalDel(); // helper for display 
+    void inorderTraversalDelRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node); // recursive inorder traversal
 
 public:
     Memtable(size_t threshold); // constructor with threshold
@@ -59,12 +60,11 @@ public:
 
     // Public helper functions
     bool insert(uint64_t key, uint64_t value); // public insert method
-    std::vector<std::tuple<uint64_t, uint64_t>> inorderTraversal(); // helper for display
     bool isThresholdReached(); // check if threshold has been reached
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::optional<uint64_t> getValue(uint64_t key); 
-    int flushToDisk(std::string filename); // flush to disk
+    size_t flushToDisk(std::string filename); // flush to disk
     Node* getRoot(); // get root of memtable
     bool isEmpty(); // helper function for checking if empty
 };
