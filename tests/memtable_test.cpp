@@ -126,15 +126,16 @@ public:
         m.insert(2, 20);
         m.insert(3, 30);
 
-        auto [key1, val1] = m.getValue(2);
-        assert(key1 == 2);
-        assert(val1.has_value() && val1.value() == 20);
-        std::cout << "getValue existing key pass!\n" << std::endl;
+        auto val1 = m.getValue(2);
+        assert(val1.has_value());
+        assert(val1.value() == 20);
+        std::cout << "getValue existing key pass!\n"
+                  << std::endl;
 
-        auto [key2, val2] = m.getValue(4);
-        assert(key2 == 4);
+        auto val2 = m.getValue(4);
         assert(!val2.has_value());
-        std::cout << "getValue non-existing key pass!\n" << std::endl;
+        std::cout << "getValue non-existing key pass!\n"
+                  << std::endl;
     }
 
     void test_deleteTree()
@@ -157,6 +158,84 @@ public:
         std::cout << "deleteTree test pass!\n"
                   << std::endl;
     }
+    void test_scanTree()
+    {
+        Memtable m(10);
+
+        m.insert(5, 50);
+        m.insert(3, 30);
+        m.insert(7, 70);
+        m.insert(2, 20);
+        m.insert(4, 40);
+        m.insert(6, 60);
+        m.insert(8, 80);
+
+        auto allEntries = m.scanTree(2, 8);
+        assert(allEntries.size() == 7);
+
+        std::cout << "Full range entries:\n"
+                  << std::endl;
+        for (auto &[key, value] : allEntries)
+            std::cout << key << " -> " << value << std::endl;
+
+        auto partial = m.scanTree(3, 6);
+        std::vector<uint64_t> expectedKeys = {3, 4, 5, 6};
+        assert(partial.size() == expectedKeys.size());
+        for (size_t i = 0; i < expectedKeys.size(); i++)
+        {
+            assert(std::get<0>(partial[i]) == expectedKeys[i]);
+        }
+
+        std::cout << "Partial range [3,6] pass!\n"
+                  << std::endl;
+
+        auto empty = m.scanTree(9, 12);
+        assert(empty.empty());
+        std::cout << "Empty range [9,12] pass!\n"
+                  << std::endl;
+
+        auto single = m.scanTree(5, 5);
+        assert(single.size() == 1);
+        assert(std::get<0>(single[0]) == 5);
+        assert(std::get<1>(single[0]) == 50);
+        std::cout << "Single key range [5,5] pass!\n"
+                  << std::endl;
+
+        std::cout << "All scanTree tests passed!\n"
+                  << std::endl;
+    }
+    void test_inorderTraversal()
+    {
+        Memtable m(10);
+
+        m.insert(5, 50);
+        m.insert(3, 30);
+        m.insert(7, 70);
+        m.insert(2, 20);
+        m.insert(4, 40);
+        m.insert(6, 60);
+        m.insert(8, 80);
+
+        auto entries = m.inorderTraversal();
+
+        std::vector<uint64_t> expectedKeys = {2, 3, 4, 5, 6, 7, 8};
+        std::vector<uint64_t> expectedValues = {20, 30, 40, 50, 60, 70, 80};
+
+        assert(entries.size() == expectedKeys.size());
+
+        for (size_t i = 0; i < entries.size(); ++i)
+        {
+            auto [key, value] = entries[i];
+            assert(key == expectedKeys[i]);
+            assert(value == expectedValues[i]);
+        }
+
+        std::cout << "Inorder traversal output:\n";
+        for (auto &[k, v] : entries)
+            std::cout << k << " -> " << v << std::endl;
+
+        std::cout << "Inorder traversal test passed!\n" << std::endl;
+    }
 };
 
 int main()
@@ -171,5 +250,7 @@ int main()
     tester.test_RL_rotation();
     tester.test_getValue();
     tester.test_deleteTree();
+    tester.test_scanTree();
+    tester.test_inorderTraversal();
     return 0;
 }

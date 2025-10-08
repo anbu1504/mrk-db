@@ -48,19 +48,19 @@ std::optional<uint64_t> Memtable::getValueRec(Node* node, uint64_t k) {
     } 
 }
 
-void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node, uint64_t min, uint64_t max) {
-    if (node == nullptr){
-        return;
-    }
+void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node, uint64_t min, uint64_t max) {
+    if (!node) return;
 
-    if (node->key < min){
+    if (node->key > min)
         scanTreeRec(entries, node->left, min, max);
-    } else if (node->key >= min && node->key <= max){
-        entries.push_back(std::make_tuple(node->key, node->value));
-    } else {
+
+    if (node->key >= min && node->key <= max)
+        entries->push_back(std::make_tuple(node->key, node->value));
+
+    if (node->key < max)
         scanTreeRec(entries, node->right, min, max);
-    }
 }
+
  
 /**
  * @brief Method to recursively delete the entire AVL tree
@@ -104,7 +104,7 @@ std::optional<uint64_t> Memtable::getValue(uint64_t key) {
 std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uint64_t max){
     std::vector<std::tuple<uint64_t, uint64_t>> entries;
 
-    scanTreeRec(entries, root, min, max);
+    scanTreeRec(&entries, root, min, max);
 
     return entries;
 }
@@ -204,20 +204,20 @@ Node* Memtable::getRoot() {
     return root;
 }
 
-void Memtable::inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node){
+void Memtable::inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node){
     if (node == nullptr){
         return;
     }
 
     inorderTraversalRec(entries, node->left);
-    entries.push_back(std::make_tuple(node->key, node->value));
+    entries->push_back(std::make_tuple(node->key, node->value));
     inorderTraversalRec(entries, node->right);
 }
 
 std::vector<std::tuple<uint64_t, uint64_t>> Memtable::inorderTraversal(){
     std::vector<std::tuple<uint64_t, uint64_t>> entries;
 
-    inorderTraversalRec(entries, root);
+    inorderTraversalRec(&entries, root);
 
     return entries;
 }

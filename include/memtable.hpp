@@ -49,9 +49,9 @@ private:
     Node* rotateRight(Node* y); // right rotation
     Node* rotateLeft(Node* x); // left rotation
     void deleteTree(); // helper to free memory
-    void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node, uint64_t min, uint64_t max); // recurive scan
+    void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node, uint64_t min, uint64_t max); // recurive scan
     std::optional<uint64_t> getValueRec(Node* node, uint64_t k); // recursive get value 
-    void inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> entries, Node* node); // recursive inorder traversal
+    void inorderTraversalRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node); // recursive inorder traversal
 
 public:
     Memtable(size_t threshold); // constructor with threshold
