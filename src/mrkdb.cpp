@@ -46,7 +46,7 @@ int DB::Open(const std::string dbName) {
     return 0;
 };
 
-uint64_t DB::Get(uint64_t key) {
+std::optional<uint64_t> DB::Get(uint64_t key) {
     std::optional<uint64_t> memtableValue = memtable->getValue(key);
 
     if (memtableValue.has_value()) {
@@ -54,9 +54,17 @@ uint64_t DB::Get(uint64_t key) {
     }
 
     // If we get to this point, then the key doesn't exist in the memtable
-    uint64_t sstValue;
+    kvPairs sstValues;
 
-    return 0;
+    for (int sstNum = sstCount - 1; sstNum >= 0; sstNum--) {
+        sstValues = std::get<0>(sstBinSearch({key, }, sstNum));
+        if (!sstValues.empty()) {
+            // Return value (index 1) from first KV-pair (index 0)
+            return std::get<1>(sstValues[0]);
+        }
+    }
+
+    return std::nullopt;
 }
 
 int DB::Put(uint64_t key, uint64_t value) {

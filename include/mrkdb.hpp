@@ -57,7 +57,7 @@ public:
      *
      * @param key The key for which the associated value will be retrieved
      */
-    uint64_t Get(uint64_t key);
+    std::optional<uint64_t> Get(uint64_t key);
 
     /**
      * @brief Retrieves all KV-pairs in a key range in key order (key1 < key2).
