@@ -38,9 +38,9 @@ public:
         db.Put(2, 200);
         db.Put(3, 300);
 
-        uint64_t val1 = db.Get(1);
-        uint64_t val2 = db.Get(2);
-        uint64_t val3 = db.Get(3);
+        uint64_t val1 = db.Get(1).value();
+        uint64_t val2 = db.Get(2).value();
+        uint64_t val3 = db.Get(3).value();
 
         assert(val1 == 100);
         assert(val2 == 200);
@@ -68,9 +68,9 @@ public:
             j++;
         }
 
-        uint64_t val1 = db.Get(1);
-        uint64_t val2 = db.Get(2);
-        uint64_t val3 = db.Get(3);
+        uint64_t val1 = db.Get(1).value();
+        uint64_t val2 = db.Get(2).value();
+        uint64_t val3 = db.Get(3).value();
 
         assert(val1 == 1);
         assert(val2 == 2);
