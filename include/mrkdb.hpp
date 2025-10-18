@@ -34,6 +34,7 @@ private:
 
     // Private helper functions
     std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t> keys, int sstNum);
+    void DB::mergeSort(std::vector<kvPairs>* vectors);
 
 public:
     /**

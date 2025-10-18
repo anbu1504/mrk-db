@@ -6,9 +6,11 @@
 #include <fcntl.h> // Also needed for O_DIRECT(?)
 #include <fstream>
 #include <unistd.h>
+#include <utility> // Needed for std::swap
 
 #define METADATA_FILENAME ".metadata"
 #define PAGE_SIZE 4096
+#define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 #define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
 
 
@@ -65,6 +67,44 @@ std::optional<uint64_t> DB::Get(uint64_t key) {
     }
 
     return std::nullopt;
+}
+
+kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
+    kvPairs memtablePairs = memtable->scanTree(key1, key2);
+
+    if (memtablePairs.size() == (key2 - key1)) {
+        return memtablePairs;
+    }
+    
+    std::vector<uint64_t> keysToFind;
+    int currIdx = 0;
+
+    for (uint64_t i = key1; i <= key2; i++) {
+        if (currIdx == memtablePairs.size() || i < std::get<0>(memtablePairs[currIdx])) {
+            keysToFind.push_back(i);
+        } else { // i == memtableValues[currIdx][0]
+            currIdx++;
+        }
+    }
+
+    std::vector<kvPairs> allPairVectors = {memtablePairs, };
+
+    std::tuple<kvPairs, std::vector<uint64_t>> binSearchRet;
+
+    for (int sstNum = sstCount - 1; sstNum >= 0 && !keysToFind.empty(); sstNum--) {
+        binSearchRet = sstBinSearch(keysToFind, sstNum);
+
+        allPairVectors.push_back(std::get<0>(binSearchRet));
+        keysToFind = std::get<1>(binSearchRet);
+    }
+
+    std::sort(allPairVectors.begin(), allPairVectors.end(), [](kvPairs a, kvPairs b) {
+        return a.size() < b.size();
+    });
+
+    mergeSort(&allPairVectors);
+
+    return allPairVectors[0];
 }
 
 int DB::Put(uint64_t key, uint64_t value) {
@@ -130,7 +170,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t
 
     // Division to obtain number of pages, rounded UP to nearest whole num
     // We multiply entryCount by 2 because there's a Key and Value for each "entry"
-    int numPages = (entryCount * 2) / PAGE_SIZE + ((entryCount * 2) % PAGE_SIZE != 0);
+    int numPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
 
     int lo = 1;
     int hi = numPages;
@@ -212,4 +252,34 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t
     }
 
     return std::make_tuple(foundPairs, keysNotFound);
+}
+
+// In-place merge-sort for a vector of kvPairs (i.e., vector of vectors)
+// Does not return anything, and instead replaces all the vectors within the input w/ 1 sorted vector
+void DB::mergeSort(std::vector<kvPairs>* vectors) {
+    // Temporary variable to help with merge-sort
+    std::vector<kvPairs> temp;
+    // Pointer to temporary variable (to make swap easier)
+    std::vector<kvPairs>* merged = &temp;
+
+    // Greedy iterative 2-way merge-sort
+    while (vectors->size() != 1) {
+        // Clear and initialize the result vector (merged)
+        // w/ the necessary number of placeholders
+        merged->assign(CEIL_DIV(vectors->size(), 2), kvPairs());
+
+        for (int i = 0; i < merged->size(); i++) {
+            if (i*2 + 1 == vectors->size()) {
+                merged->at(i) = vectors->at(i*2);
+            } else {
+                std::merge(
+                    vectors->at(i*2).begin(), vectors->at(i*2).end(),
+                    vectors->at(i*2 + 1).begin(), vectors->at(i*2 + 1).end(),
+                    std::back_inserter(merged->at(i))
+                );
+            }
+        }
+
+        std::swap(vectors, merged);
+    }
 }
