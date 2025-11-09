@@ -4,6 +4,10 @@
 #include <cstdlib>
 #include <optional>
 
+#include <fcntl.h>
+#include <unistd.h>  
+#include <cerrno>
+#include <cstring> 
 
 /**
  * @brief Constructor to initialize the memtable with a size threshold.
@@ -204,7 +208,7 @@ Node* Memtable::getRoot() {
     return root;
 }
 
-void Memtable::inorderTraversalDelRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node){
+void Memtable::inorderTraversalDelRec(std::vector<uint64_t> *entries, Node* node){
 
     if (node->left != nullptr){
         inorderTraversalDelRec(entries, node->left);
@@ -212,7 +216,8 @@ void Memtable::inorderTraversalDelRec(std::vector<std::tuple<uint64_t, uint64_t>
         node->left = nullptr;
     }
 
-    entries->push_back(std::make_tuple(node->key, node->value));
+    entries->push_back(node->key);
+    entries->push_back(node->value);
 
     if (node->right != nullptr){
         inorderTraversalDelRec(entries, node->right);
@@ -221,8 +226,8 @@ void Memtable::inorderTraversalDelRec(std::vector<std::tuple<uint64_t, uint64_t>
     }
 }
 
-std::vector<std::tuple<uint64_t, uint64_t>> Memtable::inorderTraversalDel(){
-    std::vector<std::tuple<uint64_t, uint64_t>> entries;
+std::vector<uint64_t> Memtable::inorderTraversalDel(){
+    std::vector<uint64_t> entries;
 
     if (root != nullptr){
         inorderTraversalDelRec(&entries, root);
@@ -238,7 +243,95 @@ bool Memtable::isEmpty() {
     return size == 0;
 }
 
-std::tuple<size_t, uint64_t, uint64_t> flushToDisk(std::string filename) {
-    return std::make_tuple(0, 0, 0);
+uint64_t Memtable::getMax(Node* node) {
+    if (node->right == nullptr){
+        return node->key;
+    } else {
+        return getMax(node->right);
+    }
+}
+
+uint64_t Memtable::getMin(Node* node) {
+    if (node->left == nullptr){
+        return node->key;
+    } else {
+        return getMin(node->left);
+    }
+}
+
+std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filename) {
+
+    if (root == nullptr){
+        return std::make_tuple(0, 0, 0);
+    }
+
+    uint64_t min = getMin(root);
+    uint64_t max = getMax(root);
+    size_t flushed_size = size;
+
+    // Need to check errors here (figure out raising errors)
+    int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1){
+        close(fd);
+        throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
+    }
+
+    std::cout << "Opened file";
+
+    ssize_t written = write(fd, &flushed_size, sizeof(size_t));
+    if (written == -1) {
+        close(fd);
+        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
+    } else if (written != sizeof(size_t)) {
+        close(fd);
+        throw std::runtime_error("partial write — not all bytes were written");
+    }
+
+    std::cout << "Written size";
+
+    written = write(fd, &min, sizeof(uint64_t));
+    if (written == -1) {
+        close(fd);
+        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
+    } else if (written != sizeof(uint64_t)) {
+        close(fd);
+        throw std::runtime_error("partial write — not all bytes were written");
+    }
+
+    std::cout << "Written Min";
+
+    written = write(fd, &max, sizeof(uint64_t));
+    if (written == -1) {
+        close(fd);
+        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
+    } else if (written != sizeof(uint64_t)) {
+        close(fd);
+        throw std::runtime_error("partial write — not all bytes were written");
+    }
+
+    std::cout << "Written Max";
+
+    size_t header_bytes = sizeof(size_t) + 2*sizeof(uint64_t);
+    size_t padding = 4096 - header_bytes;
+    std::vector<char> zero_buf(padding, 0);
+    written = write(fd, zero_buf.data(), padding);
+    if (written != static_cast<ssize_t>(padding)) {
+        close(fd);
+        throw std::runtime_error("failed to write padding");
+    }
+
+    std::vector<uint64_t> memtable_data = inorderTraversalDel();
+    written = write(fd, memtable_data.data(), memtable_data.size() * sizeof(uint64_t));
+
+    if (written == -1) {
+        close(fd);
+        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
+    } else if (written != static_cast<ssize_t>(memtable_data.size() * sizeof(uint64_t))) {
+        close(fd);
+        throw std::runtime_error("partial write — not all bytes were written in vector write");
+    }
+
+    close(fd);
+    return std::make_tuple(flushed_size, min, max);
 }
 
