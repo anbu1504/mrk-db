@@ -1,36 +1,38 @@
-# Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -Iinclude -g
+CXXFLAGS = -Wall -Wextra -g -std=c++17
+LDFLAGS = 
+EXECUTABLE = mrkdb_tests
 
-# Directories
-SRC_DIR = src
-INC_DIR = include
-TEST_DIR = tests
 BUILD_DIR = build
+SRC_DIR = src
+TEST_DIR = tests
+INCLUDE_DIR = include
 
-# Source files and object files
-SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC_FILES))
+LIB_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 
-# Test files and executables
-TEST_FILES = $(wildcard $(TEST_DIR)/*.cpp)
-TEST_EXEC = $(patsubst $(TEST_DIR)/%.cpp, $(BUILD_DIR)/%, $(TEST_FILES))
+TEST_MAIN = $(TEST_DIR)/mrkdb_tests.cpp
 
-# Default target
-all: $(TEST_EXEC)
+LIB_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(LIB_SOURCES))
 
-# Rule to build test executables
-$(BUILD_DIR)/%: $(TEST_DIR)/%.cpp $(OBJ_FILES)
-	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ 
+TEST_OBJECT = $(patsubst $(TEST_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(TEST_MAIN))
 
-# Rule to build object files from src
+OBJECTS = $(LIB_OBJECTS) $(TEST_OBJECT)
+
+all: $(BUILD_DIR) $(EXECUTABLE)
+
+$(BUILD_DIR):
+	mkdir -p $@
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
+	
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-# Clean build files
-clean:
-	rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/*
+$(BUILD_DIR)/mrkdb_tests.o: $(TEST_DIR)/mrkdb_tests.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 .PHONY: all clean
+
+clean:
+	rm -rf $(BUILD_DIR) $(EXECUTABLE)
