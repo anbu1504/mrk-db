@@ -99,7 +99,7 @@ public:
         db.Open(testDB);
         uint64_t key1 = 10;
         uint64_t val1 = 20;
-        uint64_t returnValue = db.Put(10, 20);
+        uint64_t returnValue = db.Put(key1, val1);
 
         assert(returnValue == 0);
 
