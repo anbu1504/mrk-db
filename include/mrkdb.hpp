@@ -7,8 +7,6 @@
 #include <vector>
 #include <filesystem>
 
-// Number of keys, corresponds to flushing 64kb of data to SSTs
-// (i.e., 16 pages worth of data) (we plan to also store 1 page for metadata)
 #define THRESHOLD 16384
 
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
@@ -33,8 +31,8 @@ private:
     std::vector<std::tuple<size_t, uint64_t, uint64_t>> sstMetadataCache;
 
     // Private helper functions
-    std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t> keys, int sstNum);
-    void DB::mergeSort(std::vector<kvPairs>* vectors);
+    std::tuple<kvPairs, std::vector<uint64_t>> sstBinSearch(std::vector<uint64_t> keys, int sstNum);
+    void mergeSort(std::vector<kvPairs>* vectors);
 
 public:
     /**

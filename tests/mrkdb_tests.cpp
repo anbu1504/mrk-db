@@ -34,17 +34,24 @@ public:
         DB db;
         db.Open(testDB);
 
-        db.Put(1, 100);
-        db.Put(2, 200);
-        db.Put(3, 300);
+        uint64_t key1 = 1;
+        uint64_t val1 = 100;
+        uint64_t key2 = 2;
+        uint64_t val2 = 200;
+        uint64_t key3 = 3;
+        uint64_t val3 = 300;
 
-        uint64_t val1 = db.Get(1).value();
-        uint64_t val2 = db.Get(2).value();
-        uint64_t val3 = db.Get(3).value();
+        db.Put(key1, val1);
+        db.Put(key2, val2);
+        db.Put(key3, val3);
 
-        assert(val1 == 100);
-        assert(val2 == 200);
-        assert(val3 == 300);
+        uint64_t res1 = db.Get(key1).value();
+        uint64_t res2 = db.Get(key2).value();
+        uint64_t res3 = db.Get(key3).value();
+
+        assert(res1 == 100);
+        assert(res2 == 200);
+        assert(res3 == 300);
 
         std::cout << "DB::Get() for memtable test passed!" << std::endl;
         
@@ -62,8 +69,8 @@ public:
         DB db;
         db.Open(testDB);
 
-        int j = 0;
-        for (int i = 0; i < THRESHOLD + 5; i++) {
+        uint64_t j = 0;
+        for (uint64_t i = 0; i < THRESHOLD + 5; i++) {
             db.Put(i, j);
             j++;
         }
@@ -90,7 +97,9 @@ public:
 
         DB db;
         db.Open(testDB);
-        int returnValue = db.Put(10, 20);
+        uint64_t key1 = 10;
+        uint64_t val1 = 20;
+        uint64_t returnValue = db.Put(10, 20);
 
         assert(returnValue == 0);
 
