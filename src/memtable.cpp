@@ -276,8 +276,6 @@ std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filenam
         throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
     }
 
-    std::cout << "Opened file";
-
     ssize_t written = write(fd, &flushed_size, sizeof(size_t));
     if (written == -1) {
         close(fd);
@@ -287,7 +285,6 @@ std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filenam
         throw std::runtime_error("partial write — not all bytes were written");
     }
 
-    std::cout << "Written size";
 
     written = write(fd, &min, sizeof(uint64_t));
     if (written == -1) {
@@ -298,7 +295,6 @@ std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filenam
         throw std::runtime_error("partial write — not all bytes were written");
     }
 
-    std::cout << "Written Min";
 
     written = write(fd, &max, sizeof(uint64_t));
     if (written == -1) {
@@ -308,8 +304,6 @@ std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filenam
         close(fd);
         throw std::runtime_error("partial write — not all bytes were written");
     }
-
-    std::cout << "Written Max";
 
     size_t header_bytes = sizeof(size_t) + 2*sizeof(uint64_t);
     size_t padding = 4096 - header_bytes;

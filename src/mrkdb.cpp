@@ -12,6 +12,7 @@
 #define PAGE_SIZE 4096
 #define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 #define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
+// #define PRINT(x) (std::cout << x << std::endl)
 
 
 int DB::Open(const std::string dbName) {
@@ -258,28 +259,26 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t
 // Does not return anything, and instead replaces all the vectors within the input w/ 1 sorted vector
 void DB::mergeSort(std::vector<kvPairs>* vectors) {
     // Temporary variable to help with merge-sort
-    std::vector<kvPairs> temp;
-    // Pointer to temporary variable (to make swap easier)
-    std::vector<kvPairs>* merged = &temp;
+    std::vector<kvPairs> merged;
 
     // Greedy iterative 2-way merge-sort
     while (vectors->size() != 1) {
         // Clear and initialize the result vector (merged)
         // w/ the necessary number of placeholders
-        merged->assign(CEIL_DIV(vectors->size(), 2), kvPairs());
+        merged.assign(CEIL_DIV(vectors->size(), 2), kvPairs());
 
-        for (int i = 0; i < merged->size(); i++) {
+        for (int i = 0; i < merged.size(); i++) {
             if (i*2 + 1 == vectors->size()) {
-                merged->at(i) = vectors->at(i*2);
+                merged[i] = vectors->at(i*2);
             } else {
                 std::merge(
                     vectors->at(i*2).begin(), vectors->at(i*2).end(),
                     vectors->at(i*2 + 1).begin(), vectors->at(i*2 + 1).end(),
-                    std::back_inserter(merged->at(i))
+                    std::back_inserter(merged[i])
                 );
             }
         }
 
-        std::swap(vectors, merged);
+        std::swap(*vectors, merged);
     }
 }
