@@ -9,6 +9,13 @@
 #include <tuple>
 #include <optional>
 
+// Number of 8-byte items that can fit in a page (4096/8)
+#define ENTRIES_PER_PAGE 512
+// B-Tree branch factor: Size of a page divided by size of a (key,page #) pair (4096/16)
+#define BRANCH_FACTOR 256
+
+// A B-Tree node, consisting of (in this order): # keys, keys vector, children vector
+typedef std::tuple<uint64_t, std::vector<uint64_t>, std::vector<uint64_t>> BTNode;
 
 /**
  * @class Node
@@ -55,6 +62,8 @@ private:
     void inorderTraversalDelRec(std::vector<uint64_t> *entries, Node* node); // recursive inorder traversal
     uint64_t getMax(Node* node); // helper for flush
     uint64_t getMin(Node* node); // helper for flush
+    std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data); // helper for flush (B-Tree)
+    std::vector<uint64_t> flattenInternalNodes(std::vector<BTNode>* internalNodes); // helper for flush (B-Tree)
 
 public:
     Memtable(size_t threshold); // constructor with threshold
@@ -67,6 +76,7 @@ public:
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::optional<uint64_t> getValue(uint64_t key); 
     std::tuple<size_t, uint64_t, uint64_t>  flushToDisk(std::string filename); // flush to disk
+    std::tuple<size_t, size_t, uint64_t, uint64_t>  flushToDiskBTree(std::string filename); // flush to disk as a B-Tree
     Node* getRoot(); // get root of memtable
     bool isEmpty(); // helper function for checking if empty
 };

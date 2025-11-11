@@ -30,15 +30,17 @@ int DB::Open(const std::string dbName) {
 
         for (int i = 0; i < sstCount; i++) {
             size_t entryCount;
+            size_t internalNodeCount;
             uint64_t minKey;
             uint64_t maxKey;
             std::ifstream sstFile(SST_PATH(i));
 
             if (sstFile.is_open()) {
                 sstFile >> entryCount;
+                sstFile >> internalNodeCount;
                 sstFile >> minKey;
                 sstFile >> maxKey;
-                sstMetadataCache.push_back(std::make_tuple(entryCount, minKey, maxKey));
+                sstMetadataCache.push_back(std::make_tuple(entryCount, internalNodeCount, minKey, maxKey));
                 sstFile.close();
             } else {
                 return 1; // Error: This SST should exist
@@ -112,7 +114,7 @@ int DB::Put(uint64_t key, uint64_t value) {
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
-        std::tuple<size_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDisk(SST_PATH(sstCount));
+        std::tuple<size_t, size_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDiskBTree(SST_PATH(sstCount));
         sstMetadataCache.push_back(sstMetadata);
         sstCount++;
     }
@@ -122,7 +124,7 @@ int DB::Put(uint64_t key, uint64_t value) {
 
 int DB::Close() {
     if (!memtable->isEmpty()) {
-        memtable->flushToDisk(SST_PATH(sstCount));
+        memtable->flushToDiskBTree(SST_PATH(sstCount));
         sstCount++;
     }
 
@@ -146,7 +148,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t
     std::vector<uint64_t> keysNotFound;
     std::vector<uint64_t> keysToFind;
 
-    auto [entryCount, minKey, maxKey] = sstMetadataCache[sstNum];
+    auto [entryCount, internalNodeCount, minKey, maxKey] = sstMetadataCache[sstNum];
 
     // Filter out keys that are outside the range of this SST
     for (int i = 0; i < keys.size(); i++) {
@@ -173,7 +175,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstBinSearch(std::vector<uint64_t
     // We multiply entryCount by 2 because there's a Key and Value for each "entry"
     int numPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
 
-    int lo = 1;
+    int lo = 1 + internalNodeCount;
     int hi = numPages;
     int mid;
 

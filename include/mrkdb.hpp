@@ -8,6 +8,7 @@
 #include <filesystem>
 
 #define THRESHOLD 16384
+#define USE_BTREE_SEARCH false
 
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
 
@@ -27,8 +28,8 @@ private:
     // Number of SSTs
     int sstCount;
 
-    // For each SST, records a tuple of <numEntries, minKey, maxKey>
-    std::vector<std::tuple<size_t, uint64_t, uint64_t>> sstMetadataCache;
+    // For each SST, records a tuple of <numEntries, numInternalNodes, minKey, maxKey>
+    std::vector<std::tuple<size_t, size_t, uint64_t, uint64_t>> sstMetadataCache;
 
     // Private helper functions
     std::tuple<kvPairs, std::vector<uint64_t>> sstBinSearch(std::vector<uint64_t> keys, int sstNum);
