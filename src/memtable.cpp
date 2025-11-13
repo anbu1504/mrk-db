@@ -399,7 +399,7 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
         throw std::runtime_error("partial write — not all bytes were written");
     }
 
-    size_t header_bytes = sizeof(size_t) + 2*sizeof(uint64_t);
+    size_t header_bytes = sizeof(size_t) + 3*sizeof(uint64_t);
     size_t padding = 4096 - header_bytes;
     std::vector<char> zero_buf(padding, 0);
     written = write(fd, zero_buf.data(), padding);
@@ -566,7 +566,7 @@ std::vector<uint64_t> Memtable::flattenInternalNodes(std::vector<BTNode>* intern
         VEC_APPEND(output, std::get<2>(internalNodes->at(node_num)));
 
         // Pad with the number of 0s required to fill a page
-        output.insert(output.end(), output.size() % ENTRIES_PER_PAGE, 0);
+        output.insert(output.end(), ENTRIES_PER_PAGE - output.size(), 0);
     }
 
     return output;
