@@ -8,7 +8,7 @@
 #include <filesystem>
 
 #define THRESHOLD 16384
-#define USE_BTREE_SEARCH false
+#define USE_BTREE_SEARCH true
 
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
 
@@ -32,7 +32,7 @@ private:
     std::vector<std::tuple<size_t, size_t, uint64_t, uint64_t>> sstMetadataCache;
 
     // Private helper functions
-    std::tuple<kvPairs, std::vector<uint64_t>> sstBinSearch(std::vector<uint64_t> keys, int sstNum);
+    std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
     void mergeSort(std::vector<kvPairs>* vectors);
 
 public:
