@@ -80,7 +80,7 @@ kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
     }
     
     std::vector<uint64_t> keysToFind;
-    int currIdx = 0;
+    size_t currIdx = 0;
 
     for (uint64_t i = key1; i <= key2; i++) {
         if (currIdx == memtablePairs.size() || i < std::get<0>(memtablePairs[currIdx])) {
@@ -151,7 +151,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     auto [entryCount, internalNodeCount, minKey, maxKey] = sstMetadataCache[sstNum];
 
     // Filter out keys that are outside the range of this SST
-    for (int i = 0; i < keys.size(); i++) {
+    for (size_t i = 0; i < keys.size(); i++) {
         if (keys[i] < minKey || keys[i] > maxKey) {
             keysNotFound.push_back(keys[i]);
         } else {
@@ -337,7 +337,7 @@ void DB::mergeSort(std::vector<kvPairs>* vectors) {
         // w/ the necessary number of placeholders
         merged.assign(CEIL_DIV(vectors->size(), 2), kvPairs());
 
-        for (int i = 0; i < merged.size(); i++) {
+        for (size_t i = 0; i < merged.size(); i++) {
             if (i*2 + 1 == vectors->size()) {
                 merged[i] = vectors->at(i*2);
             } else {

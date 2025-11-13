@@ -460,7 +460,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
     // contain the page number (including offset) and the max key in the page
     std::vector<std::tuple<uint64_t, uint64_t>> leaf_pages;
 
-    for (int leaf_num = 0; leaf_num < num_leaf_nodes - 1; leaf_num++) {
+    for (uint64_t leaf_num = 0; leaf_num < num_leaf_nodes - 1; leaf_num++) {
         // Start with the index for the *beginning* of the *next* page,
         // then subtract 2 to obtain the index of the *end* of *this* page
         uint64_t last_idx_in_page = ENTRIES_PER_PAGE * (leaf_num + 1) - 2;
@@ -479,7 +479,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
     std::vector<BTNode> curr_layer; // list of nodes in the current layer
 
 
-    for (int layer_num = 0; layer_num < layer_sizes.size(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < layer_sizes.size(); layer_num++) {
         // Used to calculate the actual page number of each node
         page_offset -= layer_sizes[layer_num];
 
@@ -500,7 +500,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
 
         uint64_t curr_child = 0;
 
-        for (int node_num = 0; node_num < layer_sizes[layer_num]; node_num++) {
+        for (uint64_t node_num = 0; node_num < layer_sizes[layer_num]; node_num++) {
             // Number of children for this node
             uint64_t node_children_count = min_children_per_node;
 
@@ -514,7 +514,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
 
             uint64_t final_child_max;
 
-            for (int child_num = 0; child_num < node_children_count; child_num++) {
+            for (uint64_t child_num = 0; child_num < node_children_count; child_num++) {
                 // If we're on the last child for this node, save its max-key
                 // for later, else push its max-key to the keys vector
                 if (child_num == node_children_count - 1) {
@@ -555,7 +555,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
 std::vector<uint64_t> Memtable::flattenInternalNodes(std::vector<BTNode>* internalNodes) {
     std::vector<uint64_t> output;
 
-    for (int node_num = 0; node_num < internalNodes->size(); node_num++) {
+    for (size_t node_num = 0; node_num < internalNodes->size(); node_num++) {
         // Append the number of keys in the node to the output
         output.push_back(std::get<0>(internalNodes->at(node_num)));
 
