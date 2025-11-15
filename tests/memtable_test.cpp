@@ -249,96 +249,6 @@ public:
 
         std::cout << "Inorder traversal test passed!\n" << std::endl;
     }
-
-    void test_flushToDisk() {
-        Memtable m(10);
-
-        m.insert(5, 50);
-        m.insert(3, 30);
-        m.insert(7, 70);
-        m.insert(2, 20);
-        m.insert(4, 40);
-        m.insert(6, 60);
-        m.insert(8, 80);
-        m.insert(10, 100);
-        m.insert(11, 110);
-        m.insert(1, 10);
-
-        const std::string flushed_filename = "tests/flushed_memtable";
-
-        std::tuple<size_t, uint64_t, uint64_t> return_value;
-        return_value = m.flushToDisk(flushed_filename);
-
-        std::cout << "(" 
-            << std::get<0>(return_value) << ", "
-            << std::get<1>(return_value) << ", "
-            << std::get<2>(return_value) << ")\n";
-
-        assert(std::get<0>(return_value) == 10);
-        assert(std::get<1>(return_value) == 1);
-        assert(std::get<2>(return_value) == 11);
-        std::cout << "Correct values were returned\n";
-
-        assert(std::filesystem::exists(flushed_filename));
-        std::cout << "Flushed File Exists\n";
-
-        int fd = open(flushed_filename.c_str(), O_RDONLY);
-        assert(fd != -1);
-
-        std::vector<std::pair<uint64_t, uint64_t>> expected = {
-            {1, 10}, {2, 20}, {3, 30}, {4, 40}, {5, 50},
-            {6, 60}, {7, 70}, {8, 80}, {10, 100}, {11, 110}
-        };
-
-        // --- Read header ---
-        size_t flushed_size;
-        uint64_t min_val, max_val;
-        ssize_t bytes = read(fd, &flushed_size, sizeof(flushed_size));
-        assert(bytes == sizeof(flushed_size));
-
-        bytes = read(fd, &min_val, sizeof(min_val));
-        assert(bytes == sizeof(min_val));
-
-        bytes = read(fd, &max_val, sizeof(max_val));
-        assert(bytes == sizeof(max_val));
-
-        std::cout << "Header: size=" << flushed_size 
-                << ", min=" << min_val 
-                << ", max=" << max_val << "\n";
-
-        // --- Seek to start of page 2 ---
-        off_t pos = lseek(fd, PAGE_SIZE, SEEK_SET);
-        assert(pos != -1);
-
-        struct stat st;
-        stat("tests/flushed_memtable", &st);
-        std::cout << "File size = " << st.st_size << "\n";
-
-        // --- Read key/value pairs ---
-        for (const auto& p : expected) {
-            uint64_t key, value;
-
-            bytes = read(fd, &key, sizeof(key));
-            assert(bytes == sizeof(key));
-
-            bytes = read(fd, &value, sizeof(value));
-            assert(bytes == sizeof(value));
-
-            std::cout << "Read key: " << key << " | Expected key: " << p.first << "\n";
-            std::cout << "Read value: " << value << " | Expected value: " << p.second << "\n";
-
-            assert(key == p.first);
-            assert(value == p.second);
-        }
-
-        // --- Optional: verify EOF not reached prematurely ---
-        char buf;
-        bytes = read(fd, &buf, 1);
-        // bytes could be 0 (EOF) or more if file has extra padding; ignore for now
-
-        close(fd);
-        std::cout << "All KV pairs read correctly using C-style I/O!\n";
-    }
 };
 
 int main()
@@ -355,6 +265,5 @@ int main()
     tester.test_deleteTree();
     tester.test_scanTree();
     tester.test_inorderTraversal();
-    tester.test_flushToDisk();
     return 0;
 }

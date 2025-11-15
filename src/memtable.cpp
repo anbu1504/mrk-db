@@ -264,76 +264,6 @@ uint64_t Memtable::getMin(Node* node) {
     }
 }
 
-std::tuple<size_t, uint64_t, uint64_t> Memtable::flushToDisk(std::string filename) {
-
-    if (root == nullptr){
-        return std::make_tuple(0, 0, 0);
-    }
-
-    uint64_t min = getMin(root);
-    uint64_t max = getMax(root);
-    size_t flushed_size = size;
-
-    // Need to check errors here (figure out raising errors)
-    int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1){
-        close(fd);
-        throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
-    }
-
-    ssize_t written = write(fd, &flushed_size, sizeof(size_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(size_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
-
-
-    written = write(fd, &min, sizeof(uint64_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(uint64_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
-
-
-    written = write(fd, &max, sizeof(uint64_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(uint64_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
-
-    size_t header_bytes = sizeof(size_t) + 2*sizeof(uint64_t);
-    size_t padding = 4096 - header_bytes;
-    std::vector<char> zero_buf(padding, 0);
-    written = write(fd, zero_buf.data(), padding);
-    if (written != static_cast<ssize_t>(padding)) {
-        close(fd);
-        throw std::runtime_error("failed to write padding");
-    }
-
-    std::vector<uint64_t> memtable_data = inorderTraversalDel();
-    written = write(fd, memtable_data.data(), memtable_data.size() * sizeof(uint64_t));
-
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != static_cast<ssize_t>(memtable_data.size() * sizeof(uint64_t))) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written in vector write");
-    }
-
-    close(fd);
-    return std::make_tuple(flushed_size, min, max);
-}
-
 std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::string filename) {
 
     if (root == nullptr){
@@ -362,51 +292,22 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     }
 
     ssize_t written = write(fd, &flushed_size, sizeof(size_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(size_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
+    checkWrite(written, fd, sizeof(size_t));
 
     written = write(fd, &num_internal_nodes, sizeof(size_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(size_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
-
+    checkWrite(written, fd, sizeof(size_t));
 
     written = write(fd, &min, sizeof(uint64_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(uint64_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
-
+    checkWrite(written, fd, sizeof(uint64_t));
 
     written = write(fd, &max, sizeof(uint64_t));
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != sizeof(uint64_t)) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written");
-    }
+    checkWrite(written, fd, sizeof(uint64_t));
 
     size_t header_bytes = sizeof(size_t) + 3*sizeof(uint64_t);
     size_t padding = 4096 - header_bytes;
     std::vector<char> zero_buf(padding, 0);
     written = write(fd, zero_buf.data(), padding);
-    if (written != static_cast<ssize_t>(padding)) {
-        close(fd);
-        throw std::runtime_error("failed to write padding");
-    }
+    checkWrite(written, fd, padding);
 
     // ========== Metadata Stuff Ends ==========
 
@@ -419,25 +320,10 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     // [uint_64t: # keys in node]|[contiguous uint_64ts: keys/delimiters]|[contiguous uint_64ts: children]
 
     written = write(fd, internal_data.data(), internal_data.size() * sizeof(uint64_t));
-
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != static_cast<ssize_t>(internal_data.size() * sizeof(uint64_t))) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written in vector write");
-    }
-
+    checkWrite(written, fd, internal_data.size() * sizeof(uint64_t));
     
     written = write(fd, memtable_data.data(), memtable_data.size() * sizeof(uint64_t));
-
-    if (written == -1) {
-        close(fd);
-        throw std::runtime_error(std::string("write failed: ") + std::strerror(errno));
-    } else if (written != static_cast<ssize_t>(memtable_data.size() * sizeof(uint64_t))) {
-        close(fd);
-        throw std::runtime_error("partial write — not all bytes were written in vector write");
-    }
+    checkWrite(written, fd, memtable_data.size() * sizeof(uint64_t));
 
     close(fd);
     return std::make_tuple(flushed_size, num_internal_nodes, min, max);
@@ -558,7 +444,7 @@ std::vector<BTNode> Memtable::constructLayer(
         curr_layer.push_back(std::make_tuple(node_children_count - 1, keys_vector, children_vector));
         curr_layer_data->push_back(std::make_tuple(page_offset + node_num, final_child_max));
     }
-    
+
     return curr_layer;
 }
 
@@ -582,4 +468,14 @@ std::vector<uint64_t> Memtable::flattenInternalNodes(std::vector<BTNode>* intern
     }
 
     return output;
+}
+
+void Memtable::checkWrite(ssize_t written, int fd, ssize_t desiredWriteAmount) {
+    if (written == -1) {
+        close(fd);
+        throw std::runtime_error(std::string("Write Failed: ") + std::strerror(errno));
+    } else if (written != desiredWriteAmount) {
+        close(fd);
+        throw std::runtime_error("Partial Write: Not all bytes were written.");
+    }
 }

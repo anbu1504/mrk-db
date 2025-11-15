@@ -70,6 +70,7 @@ private:
         std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
         std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data // output for list of page-nums and max-keys
     );
+    void checkWrite(ssize_t written, int fd, ssize_t desiredWriteAmount);
 
 public:
     Memtable(size_t threshold); // constructor with threshold
@@ -81,7 +82,6 @@ public:
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::optional<uint64_t> getValue(uint64_t key); 
-    std::tuple<size_t, uint64_t, uint64_t>  flushToDisk(std::string filename); // flush to disk
     std::tuple<size_t, size_t, uint64_t, uint64_t>  flushToDiskBTree(std::string filename); // flush to disk as a B-Tree
     Node* getRoot(); // get root of memtable
     bool isEmpty(); // helper function for checking if empty
