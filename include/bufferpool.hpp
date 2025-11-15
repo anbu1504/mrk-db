@@ -8,16 +8,19 @@
 #include <vector>
 #include <tuple>
 #include <optional>
+#define PAGE_SIZE 4096
 
-class BufferPool
-{
-public:
-    BufferPool(size_t initial, size_t maximal); // constructor with threshold
-    ~BufferPool();                              // destructor to free memory
-    // provide a concrete optional type
-    std::optional<std::vector<uint64_t>> search(int sstNum, int pageOffset);
 
-private:
+class BufferPool {
+    public:
+        BufferPool(size_t initial, size_t maximal); // constructor with threshold
+        ~BufferPool(); // destructor to free memory
+        std::optional<uint64_t*> searchPage(int sstNum, int pageOffset);
+        int addPage(uint64_t* buffer);
+        int evict();
+    private:
+        HashMap hashMap;
+
 };
 
 class HashMap
