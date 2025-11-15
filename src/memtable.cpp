@@ -483,57 +483,9 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
         // Used to calculate the actual page number of each node
         page_offset -= layer_sizes[layer_num];
 
-        // The collective total number of children to this layer
-        uint64_t total_layer_children = (layer_num == 0) ? num_leaf_nodes : layer_sizes[layer_num - 1];
-
-        // The minimum number of children each node in this layer should have
-        uint64_t min_children_per_node = total_layer_children / layer_sizes[layer_num];
-
-        // The number of extra children that need to be assigned to nodes as we go
-        uint64_t extra_children = total_layer_children % layer_sizes[layer_num];
-
-        // Explanation of how the three vars above work:
-        // Let's suppose we have 14 total_layer_children, and that this layer has 4 nodes
-        // Then, we'd have 3 min_children_per_node, and 2 extra_children left over
-        // We will then assign one extra child to each node as we go until we run out
-        // (i.e., the first two nodes will have 4 children each, and the rest will have 3 each)
-
-        uint64_t curr_child = 0;
-
-        for (uint64_t node_num = 0; node_num < layer_sizes[layer_num]; node_num++) {
-            // Number of children for this node
-            uint64_t node_children_count = min_children_per_node;
-
-            if (extra_children) { // If there're extra children, assign one to this node
-                node_children_count++;
-                extra_children--;
-            }
-            
-            std::vector<u_int64_t> keys_vector;
-            std::vector<u_int64_t> children_vector;
-
-            uint64_t final_child_max;
-
-            for (uint64_t child_num = 0; child_num < node_children_count; child_num++) {
-                // If we're on the last child for this node, save its max-key
-                // for later, else push its max-key to the keys vector
-                if (child_num == node_children_count - 1) {
-                    final_child_max = std::get<1>(child_layer_data[curr_child]);
-                } else {
-                    keys_vector.push_back(std::get<1>(child_layer_data[curr_child]));
-                }
-                children_vector.push_back(std::get<0>(child_layer_data[curr_child]));
-                curr_child++;
-            }
-
-            // We do (node_children_count - 1) to get the number of delimiting keys in the node
-            curr_layer.push_back(std::make_tuple(node_children_count - 1, keys_vector, children_vector));
-            curr_layer_data.push_back(std::make_tuple(page_offset + node_num, final_child_max));
-
-        }
+        curr_layer = constructLayer(page_offset, layer_sizes[layer_num], &child_layer_data, &curr_layer_data);
 
         // Add everything in curr_layer to finalNodeVec, from largest page-num to smallest
-        
         while (!curr_layer.empty()) {
             finalNodeVec.push_back(curr_layer.back());
             curr_layer.pop_back();
@@ -547,7 +499,67 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
     std::reverse(finalNodeVec.begin(), finalNodeVec.end());
 
     return finalNodeVec;
+}
 
+// Constructs a layer of the B-Tree, and returns a list of BTNodes
+// (also stores current layer data in the curr_layer_data variable)
+std::vector<BTNode> Memtable::constructLayer(
+    uint64_t page_offset,
+    uint64_t layer_size,
+    std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
+    std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data // output for list of page-nums and max-keys
+) {
+    std::vector<BTNode> curr_layer; // list of nodes in the current layer
+
+    // The collective total number of children to this layer
+    uint64_t total_layer_children = child_layer_data->size();
+
+    // The minimum number of children each node in this layer should have
+    uint64_t min_children_per_node = total_layer_children / layer_size;
+
+    // The number of extra children that need to be assigned to nodes as we go
+    uint64_t extra_children = total_layer_children % layer_size;
+
+    // Explanation of how the three vars above work:
+    // Let's suppose we have 14 total_layer_children, and that this layer has 4 nodes
+    // Then, we'd have 3 min_children_per_node, and 2 extra_children left over
+    // We will then assign one extra child to each node as we go until we run out
+    // (i.e., the first two nodes will have 4 children each, and the rest will have 3 each)
+
+    uint64_t curr_child = 0;
+
+    for (uint64_t node_num = 0; node_num < layer_size; node_num++) {
+        // Number of children for this node
+        uint64_t node_children_count = min_children_per_node;
+
+        if (extra_children) { // If there're extra children, assign one to this node
+            node_children_count++;
+            extra_children--;
+        }
+        
+        std::vector<u_int64_t> keys_vector;
+        std::vector<u_int64_t> children_vector;
+
+        uint64_t final_child_max;
+
+        for (uint64_t child_num = 0; child_num < node_children_count; child_num++) {
+            // If we're on the last child for this node, save its max-key
+            // for later, else push its max-key to the keys vector
+            if (child_num == node_children_count - 1) {
+                final_child_max = std::get<1>(child_layer_data->at(curr_child));
+            } else {
+                keys_vector.push_back(std::get<1>(child_layer_data->at(curr_child)));
+            }
+            children_vector.push_back(std::get<0>(child_layer_data->at(curr_child)));
+            curr_child++;
+        }
+
+        // We do (node_children_count - 1) to get the number of delimiting keys in the node
+        curr_layer.push_back(std::make_tuple(node_children_count - 1, keys_vector, children_vector));
+        curr_layer_data->push_back(std::make_tuple(page_offset + node_num, final_child_max));
+    }
+    
+    return curr_layer;
 }
 
 // Takes a vector of BTNodes, and returns a flat vector of numbers in the following form (per node)

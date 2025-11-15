@@ -64,6 +64,12 @@ private:
     uint64_t getMin(Node* node); // helper for flush
     std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data); // helper for flush (B-Tree)
     std::vector<uint64_t> flattenInternalNodes(std::vector<BTNode>* internalNodes); // helper for flush (B-Tree)
+    std::vector<BTNode> constructLayer(
+        uint64_t page_offset,
+        uint64_t layer_size,
+        std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
+        std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data // output for list of page-nums and max-keys
+    );
 
 public:
     Memtable(size_t threshold); // constructor with threshold
