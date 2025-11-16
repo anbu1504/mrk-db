@@ -73,8 +73,8 @@ public:
     ~HashMap();              // destructor to free memory
 
     int insert(std::string pageName, uint64_t *page); // 0 on success 1 on fail
-    std::optional<std::tuple<int, uint64_t *>> search(std::string pageName);
-    int remove(std::string pageName); // 0 on success 1 on fail
+    std::optional<Node *> search(std::string pageName);
+    std::optional<Node *> remove(std::string pageName); // 0 on success 1 on fail
     int extendDir();                     // 0 on success 1 on fail
     int rehashBuckets();
 

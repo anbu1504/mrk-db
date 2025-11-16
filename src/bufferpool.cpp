@@ -21,7 +21,7 @@ BufferPool::~BufferPool()
 
 std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset){
     std::string key = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
-    std::optional<std::tuple<int, uint64_t *>> searchResult = hashMap.search(key);
+    std::optional<HashMap::Node *> searchResult = hashMap.search(key);
 
     if (searchResult.has_value()){
         return searchResult.value();
@@ -148,10 +148,14 @@ void HashMap::rehashBucket(DirEntry *dirEntry){
 }
 
 int HashMap::extendDir() {
-    int currDirSize = 1 << numBitsUsed; // 2^numBitsUsed
+    int currDirSize = directory.size();
     int newDirSize = 2 * currDirSize;
-
-    
+    directory.resize(newDirSize);
+    for (size_t i = 0; i < currDirSize; i++) {
+        directory[i + currDirSize] = directory[i];
+    }
+    numBitsUsed++;
+    return 0;
 }
 
 
@@ -183,4 +187,37 @@ int HashMap::insert(std::string pageName, uint64_t *page)
             rehashBucket(dirEntry);
         }
     }
+}
+
+std::optional<HashMap::Node*> HashMap::search(std::string pageName) {
+    
+    uint64_t hashedPageName = hashFunction(pageName);
+    uint64_t mask = (1ULL << numBitsUsed) - 1;
+    uint64_t maskedHashPage = hashedPageName & mask;
+    DirEntry *dirEntry = directory[maskedHashPage];
+
+    if (!dirEntry->first) {
+        return std::nullopt; // this means the directory entry itself is empty
+    }
+
+    else {
+        Node * curr = dirEntry->first;
+
+        while (!curr) {
+            if (curr->pageName == pageName) {
+                return curr;
+            }
+            curr = curr->next;
+        }
+        return std::nullopt; // if we reach here, that means there is no node that has a matching page name
+    }
+}
+
+std::optional<HashMap::Node *> HashMap::remove(std::string pageName) {
+    uint64_t hashedPageName = hashFunction(pageName);
+    uint64_t mask = (1ULL << numBitsUsed) - 1;
+    uint64_t maskedHashPage = hashedPageName & mask;
+    DirEntry *dirEntry = directory[maskedHashPage];
+
+
 }
