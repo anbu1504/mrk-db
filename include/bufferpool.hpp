@@ -44,16 +44,24 @@ public:
         }
     };
 
-    std::vector<std::tuple<int, Node *, size_t>> directory;
+    struct DirEntry {
+        Node * first;
+        Node * tail;
+        size_t chainSize;
+        size_t numHashedDigits; // number of digits used to differentiate this bucket
+    };
+
+    std::vector<DirEntry *> directory;
 
     HashMap(size_t initial); // constructor with initial size
     ~HashMap();              // destructor to free memory
 
     int insert(std::string pageName, uint64_t *page); // 0 on success 1 on fail
-    std::tuple<int, uint64_t *> search(std::string pageName);
+    std::optional<std::tuple<int, uint64_t *>> search(std::string pageName);
     int remove(std::string pageName); // 0 on success 1 on fail
     int extend();                     // 0 on success 1 on fail
+    int rehashBuckets();
 
 private:
-    int hashFunction(std::string key);
+    uint64_t hashFunction(std::string key);
 };
