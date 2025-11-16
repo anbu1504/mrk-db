@@ -7,7 +7,9 @@
  */
 
 BufferPool::BufferPool(size_t initial, size_t maximal)
-    : hashMap(initial) {};
+    : hashMap(initial),
+    initial(initial),
+    maximal(maximal) {};
 
 /**
  * @brief Destructor for the BufferPool class
@@ -16,16 +18,39 @@ BufferPool::~BufferPool()
 {
 }
 
+std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset){
+    std::string key = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
+    std::optional<std::tuple<int, uint64_t *>> searchResult = hashMap.search(key);
+
+    if (searchResult.has_value()){
+        return searchResult.value();
+    } else {
+        return std::nullopt;
+    }
+}
+
+int addPage(uint64_t *buffer){
+    
+}
+
+
+
+
+
+
+
 /**
  * @brief Constructor for the HashMap class
  */
 
 HashMap::HashMap(size_t initial)
 {
-    numBitsUsed = ceil(log2(initial)); // for global depth of directory
+    numBitsUsed = std::ceil(std::log2(initial)); // for global depth of directory
     bufferOverflowThreshold = 3;
 
     // Initializing buckets
+
+    // FIXME: Update buckets to new system
 
     for (size_t i = 0; i < initial; i++)
     {
@@ -61,38 +86,91 @@ uint64_t HashMap::hashFunction(std::string key)
     return h;
 }
 
-int HashMap::insert(std::string pageName, uint64_t *page)
-{
-    uint64_t hashedPageName = hashFunction(pageName);
-    uint64_t mask = 1ULL << hashedPageName - 1;
-
-    uint64_t maskedHashPage = hashedPageName & mask;
-
-    DirEntry *dirEntry = directory[maskedHashPage];
-    Node *insertNode = new Node(pageName, page);
-
+//Maybe change return value
+void HashMap::insertNodeToBucket(Node *node, DirEntry *dirEntry){
     if (!dirEntry->first)
     {
         dirEntry->first = insertNode;
         dirEntry->tail = insertNode;
     }
 
-    else
-    {
+    else {
         dirEntry->tail->next = insertNode;
         dirEntry->tail = insertNode;
     }
     dirEntry->chainSize++;
+}
+
+// Maybe change return value
+void HashMap::rehashBucket(DirEntry *dirEntry){
+    Node *chainCurrent = dirEntry->first;
+    DirEntry* newEntry = new DirEntry();
+
+    // Adds 1 immediately left to old hashedIndex of dirEntry
+    // Ex. dirEntry->hashedIndex = 4 (0100), newEntry->hashedIndex = 12 (1100)
+    newEntry->hashedIndex =  dirEntry->hashedIndex | (1ULL << dirEntry->numHashedDigits);
+
+    // Counts num of bits in current hashed index
+    // int nBits = static_cast<int>(std::floor(std::log2(numBitsUsed))) + 1;
+
+    // Creates all indices that are point to bucket being rehashed
+    // Creates prefixes that will be 'OR'ed to current hashedIndex to generate each index
+    for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix) {
+        size_t combined = (prefix << dirEntry->numHasedDigits) | dirEntry->hashedIndex;
+        // Assigns all indices that start with 0 to old dirEntry
+        if (((combined >> (numBitsUsed - 1)) & 1) == 0){
+            directory[combined] = dirEntry;
+        } else{  // Assigns all indices that start with 1 to new dirEntry
+            directory[combined] = newEntry;
+        }
+    }
+
+    dirEntry->numHashedDigits++;
+    newEntry->numHashedDigits = dirEntry->numHashedDigits;
+
+    dirEntry->first = nullptr;
+    dirEntry->last = nullptr;
+
+    while (!chainCurrent){
+        uint64_t hashedPageName = hashFunction(pageName);
+        uint64_t mask = (1ULL << numBitsUsed) - 1;
+
+        uint64_t maskedHashPage = hashedPageName & mask;
+
+        DirEntry *newEntry = directory[maskedHashPage];
+
+        InsertNodeToBucket(chainCurrent, newEntry);
+        chainCurrent = chainCurrent->next;
+
+    }
+
+}
+
+int HashMap::insert(std::string pageName, uint64_t *page)
+{
+    uint64_t hashedPageName = hashFunction(pageName);
+    uint64_t mask = (1ULL << numBitsUsed) - 1;
+
+    uint64_t maskedHashPage = hashedPageName & mask;
+
+    DirEntry *dirEntry = directory[maskedHashPage];
+    Node *insertNode = new Node(pageName, page);
+
+    insertNodeToBucket(insertNode, dirEntry);
+
 
     if (dirEntry->chainSize >= bufferOverflowThreshold)
     {
         if (dirEntry->numHashedDigits < numBitsUsed)
         {
             // rehash buckets
+            rehashBucket(dirEntry);
         }
         else
         {
             // extend directory + rehash buckets :)
+            // extend directory ->
+            rehashBucket(dirEntry);
         }
     }
 }

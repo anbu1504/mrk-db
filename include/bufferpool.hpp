@@ -13,14 +13,19 @@
 class BufferPool
 {
 public:
-    BufferPool(size_t initial, size_t maximal); // constructor with threshold
-    ~BufferPool();                              // destructor to free memory
-    std::optional<uint64_t *> searchPage(int sstNum, int pageOffset);
+    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages); // constructor
+    ~BufferPool(); // destructor to free memory
+    size_t initialDirSize; // Initial number of buckets in hash map
+    size_t maxDirSize; // Maximum number of buckets in hash map
+    size_t maxPages; // Maximum number of pages in buffer pool
+    std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
     int addPage(uint64_t *buffer);
     int evict();
 
 private:
     HashMap hashMap;
+    std::vector<std::string> storedPages;
+    std::optional<std::string> get_next_eviction();
 };
 
 class HashMap
@@ -49,6 +54,16 @@ public:
         Node * tail;
         size_t chainSize;
         size_t numHashedDigits; // number of digits used to differentiate this bucket
+        size_t hashedIndex;
+
+        DirEntry(size_t numDigits, size_t index)
+            : first(nullptr),
+              tail(nullptr),
+              chainSize(0),
+              numHashedDigits(numDigits),
+              hashedIndex(index)
+        {
+        }
     };
 
     std::vector<DirEntry *> directory;
@@ -64,4 +79,6 @@ public:
 
 private:
     uint64_t hashFunction(std::string key);
+    void insertNodeToBucket(Node *node, DirEntry *dirEntry);
+    void rehashBucket(DirEntry *dirEntry);
 };
