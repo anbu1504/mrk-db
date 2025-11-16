@@ -1,5 +1,6 @@
 #include "bufferpool.hpp";
 #include "xxhash64.h";
+#include <unordered_set>;
 #include <cmath>;
 
 /**
@@ -42,22 +43,21 @@ int addPage(uint64_t *buffer)
  * @brief Constructor for the HashMap class
  */
 
-HashMap::HashMap(size_t initial)
+HashMap::HashMap(size_t initial, size_t maxDir)
+    : bucketOverflowThreshold(BUCKET_OVERFLOW_THRESHOLD),
+      numBitsUsed(0),
+      maxDirSize(maxDir)
 {
-    numBitsUsed = std::ceil(std::log2(initial)); // for global depth of directory
-    bufferOverflowThreshold = 3;
+    numBitsUsed = ceil(log2(initial));
 
-    // Initializing buckets
-
-    // FIXME: Update buckets to new system
-
-    // for (size_t i = 0; i < initial; i++)
-    // {
-    //     directory[i] = std::make_tuple(
-    //         i,
-    //         nullptr,
-    //         0);
-    // };
+    size_t dirSize = 1ULL << numBitsUsed; // 2^numBitsUsed
+    
+    for (size_t i = 0; i < dirSize; i++) {
+        DirEntry *entry = new DirEntry();
+        entry->numHashedDigits = numBitsUsed;
+        entry->hashedIndex = i;
+        directory.push_back(entry);
+    }
 }
 
 /**
@@ -66,16 +66,26 @@ HashMap::HashMap(size_t initial)
 
 HashMap::~HashMap()
 {
-    // for (auto &[depth, head, count] : directory)
-    // {
-    //     Node *curr = head;
-    //     while (curr)
-    //     {
-    //         Node *tempNext = curr->next;
-    //         delete curr;
-    //         curr = tempNext;
-    //     }
-    // }
+    // directory may contain duplicated DirEntry* entries from extendible hashing
+    // delete each unique DirEntry once, and delete all Nodes in its chain.
+    std::unordered_set<DirEntry *> seen;
+
+    for (DirEntry *entry : directory) {
+        if (!entry) {
+            continue;
+        }
+
+        if (seen.insert(entry).second) { // only is true for the first time we encounter this pointer, so we only run the if-body once per unique pointer
+            Node *curr = entry->first;
+            while (curr) {
+                delete curr;
+                curr = curr->next;
+            }
+            delete entry;
+        }
+    }
+    directory.clear();
+
 }
 
 uint64_t HashMap::hashFunction(std::string key)
@@ -137,7 +147,7 @@ void HashMap::rehashBucket(DirEntry *dirEntry)
     dirEntry->first = nullptr;
     dirEntry->tail = nullptr;
 
-    while (!chainCurrent)
+    while (chainCurrent)
     {
         uint64_t hashedPageName = hashFunction(chainCurrent->pageName);
         uint64_t mask = (1ULL << numBitsUsed) - 1;
@@ -155,6 +165,10 @@ int HashMap::extendDir()
 {
     int currDirSize = directory.size();
     int newDirSize = 2 * currDirSize;
+    if (newDirSize > maxDirSize)
+    {
+        return 1; // since we can't go past the maximum allowed directory size
+    }
     directory.resize(newDirSize);
     for (size_t i = 0; i < currDirSize; i++)
     {
@@ -174,8 +188,6 @@ int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
     DirEntry *dirEntry = directory[maskedHashPage];
     Node *insertNode = new Node(pageName, page, pageSize);
 
-    insertNodeToBucket(insertNode, dirEntry);
-
     if (dirEntry->chainSize >= bufferOverflowThreshold)
     {
         if (dirEntry->numHashedDigits < numBitsUsed)
@@ -187,10 +199,16 @@ int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
         {
             // extend directory + rehash buckets :)
             // extend directory ->
-            extendDir();
+            int extendDirResult = extendDir();
+            if (extendDirResult == 1)
+            {
+                return 1; // i.e. we have exceeded the directory size
+            }
             rehashBucket(dirEntry);
         }
+        insertNodeToBucket(insertNode, dirEntry);
     }
+    return 0; // insert success
 }
 
 std::optional<HashMap::Node *> HashMap::search(std::string pageName)
@@ -210,7 +228,7 @@ std::optional<HashMap::Node *> HashMap::search(std::string pageName)
     {
         Node *curr = dirEntry->first;
 
-        while (!curr)
+        while (curr)
         {
             if (curr->pageName == pageName)
             {
@@ -239,7 +257,7 @@ std::optional<HashMap::Node *> HashMap::remove(std::string pageName)
         Node *curr = dirEntry->first;
         Node *prev = nullptr;
         Node *removeNode = nullptr;
-        while (!curr)
+        while (curr)
         {
             if (curr->pageName == pageName)
             {
