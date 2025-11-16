@@ -51,8 +51,9 @@ HashMap::HashMap(size_t initial, size_t maxDir)
     numBitsUsed = ceil(log2(initial));
 
     size_t dirSize = 1ULL << numBitsUsed; // 2^numBitsUsed
-    
-    for (size_t i = 0; i < dirSize; i++) {
+
+    for (size_t i = 0; i < dirSize; i++)
+    {
         DirEntry *entry = new DirEntry();
         entry->numHashedDigits = numBitsUsed;
         entry->hashedIndex = i;
@@ -70,14 +71,18 @@ HashMap::~HashMap()
     // delete each unique DirEntry once, and delete all Nodes in its chain.
     std::unordered_set<DirEntry *> seen;
 
-    for (DirEntry *entry : directory) {
-        if (!entry) {
+    for (DirEntry *entry : directory)
+    {
+        if (!entry)
+        {
             continue;
         }
 
-        if (seen.insert(entry).second) { // only is true for the first time we encounter this pointer, so we only run the if-body once per unique pointer
+        if (seen.insert(entry).second)
+        { // only is true for the first time we encounter this pointer, so we only run the if-body once per unique pointer
             Node *curr = entry->first;
-            while (curr) {
+            while (curr)
+            {
                 delete curr;
                 curr = curr->next;
             }
@@ -85,7 +90,6 @@ HashMap::~HashMap()
         }
     }
     directory.clear();
-
 }
 
 uint64_t HashMap::hashFunction(std::string key)
@@ -188,7 +192,7 @@ int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
     DirEntry *dirEntry = directory[maskedHashPage];
     Node *insertNode = new Node(pageName, page, pageSize);
 
-    if (dirEntry->chainSize >= bufferOverflowThreshold)
+    if (dirEntry->chainSize >= bucketOverflowThreshold)
     {
         if (dirEntry->numHashedDigits < numBitsUsed)
         {
