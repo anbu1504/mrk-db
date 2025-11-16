@@ -6,10 +6,11 @@
  * @brief Constructor for the BufferPool class
  */
 
-BufferPool::BufferPool(size_t initial, size_t maximal)
-    : hashMap(initial),
-    initial(initial),
-    maximal(maximal) {};
+BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPagesAmount)
+    : hashMap(initialAmount),
+    initialDirSize(initialAmount),
+    maxDirSize(maximalAmount),
+    maxPages(maxPagesAmount) {};
 
 /**
  * @brief Destructor for the BufferPool class
@@ -52,13 +53,13 @@ HashMap::HashMap(size_t initial)
 
     // FIXME: Update buckets to new system
 
-    for (size_t i = 0; i < initial; i++)
-    {
-        directory[i] = std::make_tuple(
-            i,
-            nullptr,
-            0);
-    };
+    // for (size_t i = 0; i < initial; i++)
+    // {
+    //     directory[i] = std::make_tuple(
+    //         i,
+    //         nullptr,
+    //         0);
+    // };
 }
 
 /**
@@ -67,16 +68,16 @@ HashMap::HashMap(size_t initial)
 
 HashMap::~HashMap()
 {
-    for (auto &[depth, head, count] : directory)
-    {
-        Node *curr = head;
-        while (curr)
-        {
-            Node *tempNext = curr->next;
-            delete curr;
-            curr = tempNext;
-        }
-    }
+    // for (auto &[depth, head, count] : directory)
+    // {
+    //     Node *curr = head;
+    //     while (curr)
+    //     {
+    //         Node *tempNext = curr->next;
+    //         delete curr;
+    //         curr = tempNext;
+    //     }
+    // }
 }
 
 uint64_t HashMap::hashFunction(std::string key)
@@ -90,13 +91,13 @@ uint64_t HashMap::hashFunction(std::string key)
 void HashMap::insertNodeToBucket(Node *node, DirEntry *dirEntry){
     if (!dirEntry->first)
     {
-        dirEntry->first = insertNode;
-        dirEntry->tail = insertNode;
+        dirEntry->first = node;
+        dirEntry->tail = node;
     }
 
     else {
-        dirEntry->tail->next = insertNode;
-        dirEntry->tail = insertNode;
+        dirEntry->tail->next = node;
+        dirEntry->tail = node;
     }
     dirEntry->chainSize++;
 }
@@ -116,7 +117,7 @@ void HashMap::rehashBucket(DirEntry *dirEntry){
     // Creates all indices that are point to bucket being rehashed
     // Creates prefixes that will be 'OR'ed to current hashedIndex to generate each index
     for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix) {
-        size_t combined = (prefix << dirEntry->numHasedDigits) | dirEntry->hashedIndex;
+        size_t combined = (prefix << dirEntry->numHashedDigits) | dirEntry->hashedIndex;
         // Assigns all indices that start with 0 to old dirEntry
         if (((combined >> (numBitsUsed - 1)) & 1) == 0){
             directory[combined] = dirEntry;
@@ -129,22 +130,30 @@ void HashMap::rehashBucket(DirEntry *dirEntry){
     newEntry->numHashedDigits = dirEntry->numHashedDigits;
 
     dirEntry->first = nullptr;
-    dirEntry->last = nullptr;
+    dirEntry->tail = nullptr;
 
     while (!chainCurrent){
-        uint64_t hashedPageName = hashFunction(pageName);
+        uint64_t hashedPageName = hashFunction(chainCurrent->pageName);
         uint64_t mask = (1ULL << numBitsUsed) - 1;
 
         uint64_t maskedHashPage = hashedPageName & mask;
 
         DirEntry *newEntry = directory[maskedHashPage];
 
-        InsertNodeToBucket(chainCurrent, newEntry);
+        insertNodeToBucket(chainCurrent, newEntry);
         chainCurrent = chainCurrent->next;
 
     }
 
 }
+
+int HashMap::extendDir() {
+    int currDirSize = 1 << numBitsUsed; // 2^numBitsUsed
+    int newDirSize = 2 * currDirSize;
+
+    
+}
+
 
 int HashMap::insert(std::string pageName, uint64_t *page)
 {
@@ -170,6 +179,7 @@ int HashMap::insert(std::string pageName, uint64_t *page)
         {
             // extend directory + rehash buckets :)
             // extend directory ->
+            extendDir();
             rehashBucket(dirEntry);
         }
     }

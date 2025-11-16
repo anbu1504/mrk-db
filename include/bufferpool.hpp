@@ -33,6 +33,7 @@ class HashMap
 public:
     int bufferOverflowThreshold;
     int numBitsUsed; // used for directory
+    
 
     struct Node
     {
@@ -56,12 +57,12 @@ public:
         size_t numHashedDigits; // number of digits used to differentiate this bucket
         size_t hashedIndex;
 
-        DirEntry(size_t numDigits, size_t index)
+        DirEntry()
             : first(nullptr),
               tail(nullptr),
               chainSize(0),
-              numHashedDigits(numDigits),
-              hashedIndex(index)
+              numHashedDigits(0),
+              hashedIndex(0)
         {
         }
     };
@@ -74,7 +75,7 @@ public:
     int insert(std::string pageName, uint64_t *page); // 0 on success 1 on fail
     std::optional<std::tuple<int, uint64_t *>> search(std::string pageName);
     int remove(std::string pageName); // 0 on success 1 on fail
-    int extend();                     // 0 on success 1 on fail
+    int extendDir();                     // 0 on success 1 on fail
     int rehashBuckets();
 
 private:
