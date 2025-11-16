@@ -8,9 +8,9 @@
 
 BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPagesAmount)
     : hashMap(initialAmount),
-    initialDirSize(initialAmount),
-    maxDirSize(maximalAmount),
-    maxPages(maxPagesAmount) {};
+      initialDirSize(initialAmount),
+      maxDirSize(maximalAmount),
+      maxPages(maxPagesAmount) {};
 
 /**
  * @brief Destructor for the BufferPool class
@@ -19,26 +19,24 @@ BufferPool::~BufferPool()
 {
 }
 
-std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset){
+std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset)
+{
     std::string key = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
     std::optional<HashMap::Node *> searchResult = hashMap.search(key);
 
-    if (searchResult.has_value()){
+    if (searchResult.has_value())
+    {
         return searchResult.value();
-    } else {
+    }
+    else
+    {
         return std::nullopt;
     }
 }
 
-int addPage(uint64_t *buffer){
-    
+int addPage(uint64_t *buffer)
+{
 }
-
-
-
-
-
-
 
 /**
  * @brief Constructor for the HashMap class
@@ -87,15 +85,17 @@ uint64_t HashMap::hashFunction(std::string key)
     return h;
 }
 
-//Maybe change return value
-void HashMap::insertNodeToBucket(Node *node, DirEntry *dirEntry){
+// Maybe change return value
+void HashMap::insertNodeToBucket(Node *node, DirEntry *dirEntry)
+{
     if (!dirEntry->first)
     {
         dirEntry->first = node;
         dirEntry->tail = node;
     }
 
-    else {
+    else
+    {
         dirEntry->tail->next = node;
         dirEntry->tail = node;
     }
@@ -103,25 +103,30 @@ void HashMap::insertNodeToBucket(Node *node, DirEntry *dirEntry){
 }
 
 // Maybe change return value
-void HashMap::rehashBucket(DirEntry *dirEntry){
+void HashMap::rehashBucket(DirEntry *dirEntry)
+{
     Node *chainCurrent = dirEntry->first;
-    DirEntry* newEntry = new DirEntry();
+    DirEntry *newEntry = new DirEntry();
 
     // Adds 1 immediately left to old hashedIndex of dirEntry
     // Ex. dirEntry->hashedIndex = 4 (0100), newEntry->hashedIndex = 12 (1100)
-    newEntry->hashedIndex =  dirEntry->hashedIndex | (1ULL << dirEntry->numHashedDigits);
+    newEntry->hashedIndex = dirEntry->hashedIndex | (1ULL << dirEntry->numHashedDigits);
 
     // Counts num of bits in current hashed index
     // int nBits = static_cast<int>(std::floor(std::log2(numBitsUsed))) + 1;
 
     // Creates all indices that are point to bucket being rehashed
     // Creates prefixes that will be 'OR'ed to current hashedIndex to generate each index
-    for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix) {
+    for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix)
+    {
         size_t combined = (prefix << dirEntry->numHashedDigits) | dirEntry->hashedIndex;
         // Assigns all indices that start with 0 to old dirEntry
-        if (((combined >> (numBitsUsed - 1)) & 1) == 0){
+        if (((combined >> (numBitsUsed - 1)) & 1) == 0)
+        {
             directory[combined] = dirEntry;
-        } else{  // Assigns all indices that start with 1 to new dirEntry
+        }
+        else
+        { // Assigns all indices that start with 1 to new dirEntry
             directory[combined] = newEntry;
         }
     }
@@ -132,7 +137,8 @@ void HashMap::rehashBucket(DirEntry *dirEntry){
     dirEntry->first = nullptr;
     dirEntry->tail = nullptr;
 
-    while (!chainCurrent){
+    while (!chainCurrent)
+    {
         uint64_t hashedPageName = hashFunction(chainCurrent->pageName);
         uint64_t mask = (1ULL << numBitsUsed) - 1;
 
@@ -142,24 +148,23 @@ void HashMap::rehashBucket(DirEntry *dirEntry){
 
         insertNodeToBucket(chainCurrent, newEntry);
         chainCurrent = chainCurrent->next;
-
     }
-
 }
 
-int HashMap::extendDir() {
+int HashMap::extendDir()
+{
     int currDirSize = directory.size();
     int newDirSize = 2 * currDirSize;
     directory.resize(newDirSize);
-    for (size_t i = 0; i < currDirSize; i++) {
+    for (size_t i = 0; i < currDirSize; i++)
+    {
         directory[i + currDirSize] = directory[i];
     }
     numBitsUsed++;
     return 0;
 }
 
-
-int HashMap::insert(std::string pageName, uint64_t *page)
+int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
 {
     uint64_t hashedPageName = hashFunction(pageName);
     uint64_t mask = (1ULL << numBitsUsed) - 1;
@@ -167,10 +172,9 @@ int HashMap::insert(std::string pageName, uint64_t *page)
     uint64_t maskedHashPage = hashedPageName & mask;
 
     DirEntry *dirEntry = directory[maskedHashPage];
-    Node *insertNode = new Node(pageName, page);
+    Node *insertNode = new Node(pageName, page, pageSize);
 
     insertNodeToBucket(insertNode, dirEntry);
-
 
     if (dirEntry->chainSize >= bufferOverflowThreshold)
     {
@@ -189,22 +193,27 @@ int HashMap::insert(std::string pageName, uint64_t *page)
     }
 }
 
-std::optional<HashMap::Node*> HashMap::search(std::string pageName) {
-    
+std::optional<HashMap::Node *> HashMap::search(std::string pageName)
+{
+
     uint64_t hashedPageName = hashFunction(pageName);
     uint64_t mask = (1ULL << numBitsUsed) - 1;
     uint64_t maskedHashPage = hashedPageName & mask;
     DirEntry *dirEntry = directory[maskedHashPage];
 
-    if (!dirEntry->first) {
+    if (!dirEntry->first)
+    {
         return std::nullopt; // this means the directory entry itself is empty
     }
 
-    else {
-        Node * curr = dirEntry->first;
+    else
+    {
+        Node *curr = dirEntry->first;
 
-        while (!curr) {
-            if (curr->pageName == pageName) {
+        while (!curr)
+        {
+            if (curr->pageName == pageName)
+            {
                 return curr;
             }
             curr = curr->next;
@@ -213,11 +222,53 @@ std::optional<HashMap::Node*> HashMap::search(std::string pageName) {
     }
 }
 
-std::optional<HashMap::Node *> HashMap::remove(std::string pageName) {
+std::optional<HashMap::Node *> HashMap::remove(std::string pageName)
+{
     uint64_t hashedPageName = hashFunction(pageName);
     uint64_t mask = (1ULL << numBitsUsed) - 1;
     uint64_t maskedHashPage = hashedPageName & mask;
     DirEntry *dirEntry = directory[maskedHashPage];
 
+    if (!dirEntry->first)
+    {
+        return std::nullopt; // this means the directory entry itself is empty
+    }
 
+    else
+    {
+        Node *curr = dirEntry->first;
+        Node *prev = nullptr;
+        Node *removeNode = nullptr;
+        while (!curr)
+        {
+            if (curr->pageName == pageName)
+            {
+                removeNode = curr;
+                if (prev == nullptr)
+                { // i.e. we are at first
+                    dirEntry->first = curr->next;
+                    return removeNode;
+                }
+
+                else if (curr == dirEntry->tail)
+                {
+                    prev->next = curr->next;
+                    dirEntry->tail = prev;
+                    return removeNode;
+                }
+
+                else
+                {
+                    prev->next = curr->next;
+                    return removeNode;
+                }
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+        if (!removeNode)
+        {
+            return std::nullopt; // if we reach here, that means there is no node that has a matching page name
+        }
+    }
 }

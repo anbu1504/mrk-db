@@ -14,10 +14,10 @@ class BufferPool
 {
 public:
     BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages); // constructor
-    ~BufferPool(); // destructor to free memory
-    size_t initialDirSize; // Initial number of buckets in hash map
-    size_t maxDirSize; // Maximum number of buckets in hash map
-    size_t maxPages; // Maximum number of pages in buffer pool
+    ~BufferPool();                                                         // destructor to free memory
+    size_t initialDirSize;                                                 // Initial number of buckets in hash map
+    size_t maxDirSize;                                                     // Maximum number of buckets in hash map
+    size_t maxPages;                                                       // Maximum number of pages in buffer pool
     std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
     int addPage(uint64_t *buffer);
     int evict();
@@ -33,7 +33,6 @@ class HashMap
 public:
     int bufferOverflowThreshold;
     int numBitsUsed; // used for directory
-    
 
     struct Node
     {
@@ -41,18 +40,22 @@ public:
         uint64_t *page;
         Node *next;
         bool accessBit;
+        size_t pageSize;
 
-        Node(std::string name, uint64_t *p)
+        Node(std::string name, uint64_t *p, size_t size)
             : pageName(name),
               page(p),
-              next(nullptr)
+              next(nullptr),
+              accessBit(true),
+              pageSize(size)
         {
         }
     };
 
-    struct DirEntry {
-        Node * first;
-        Node * tail;
+    struct DirEntry
+    {
+        Node *first;
+        Node *tail;
         size_t chainSize;
         size_t numHashedDigits; // number of digits used to differentiate this bucket
         size_t hashedIndex;
@@ -72,10 +75,10 @@ public:
     HashMap(size_t initial); // constructor with initial size
     ~HashMap();              // destructor to free memory
 
-    int insert(std::string pageName, uint64_t *page); // 0 on success 1 on fail
+    int insert(std::string pageName, uint64_t *page, size_t pageSize); // 0 on success 1 on fail
     std::optional<Node *> search(std::string pageName);
     std::optional<Node *> remove(std::string pageName); // 0 on success 1 on fail
-    int extendDir();                     // 0 on success 1 on fail
+    int extendDir();                                    // 0 on success 1 on fail
     int rehashBuckets();
 
 private:
