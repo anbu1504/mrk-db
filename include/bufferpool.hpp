@@ -18,15 +18,16 @@ public:
     ~BufferPool();                                                         // destructor to free memory
     size_t initialDirSize;                                                 // Initial number of buckets in hash map
     size_t maxDirSize;                                                     // Maximum number of buckets in hash map
-    size_t maxPages;                                                       // Maximum number of pages in buffer pool
+    size_t maxPages;  
+    size_t numPages;                                                     // Maximum number of pages in buffer pool
     std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
     int addPage(uint64_t *buffer);
-    int evict();
-
+    
 private:
     HashMap hashMap;
     std::vector<std::string> storedPages;
     std::optional<std::string> get_next_eviction();
+    int evict();
 };
 
 class HashMap

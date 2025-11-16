@@ -8,7 +8,7 @@
  */
 
 BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPagesAmount)
-    : hashMap(initialAmount),
+    : hashMap(initialAmount, maximalAmount),
       initialDirSize(initialAmount),
       maxDirSize(maximalAmount),
       maxPages(maxPagesAmount) {};
@@ -27,17 +27,15 @@ std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, in
 
     if (searchResult.has_value())
     {
-        return searchResult.value();
+        HashMap::Node *node = searchResult.value();
+        std::tuple<int, uint64_t *> returnValue = std::make_tuple(node->pageSize, node->page);
+        return returnValue;
     }
-    else
-    {
+    else {
         return std::nullopt;
     }
 }
 
-int addPage(uint64_t *buffer)
-{
-}
 
 /**
  * @brief Constructor for the HashMap class
