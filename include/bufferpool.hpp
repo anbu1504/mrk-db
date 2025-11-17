@@ -11,27 +11,10 @@
 #define PAGE_SIZE 4096
 #define BUCKET_OVERFLOW_THRESHOLD 4
 
-class BufferPool
-{
-public:
-    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages); // constructor
-    ~BufferPool();                                                         // destructor to free memory
-    size_t initialDirSize;                                                 // Initial number of buckets in hash map
-    size_t maxDirSize;                                                     // Maximum number of buckets in hash map
-    size_t maxPages;  
-    size_t numPages;                                                     // Maximum number of pages in buffer pool
-    std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
-    int addPage(uint64_t *buffer);
-    
-private:
-    HashMap hashMap;
-    std::vector<std::string> storedPages;
-    std::optional<std::string> get_next_eviction();
-    int evict();
-};
-
 class HashMap
 {
+    friend class HashMapTester;
+
 public:
     int bucketOverflowThreshold;
     int numBitsUsed; // used for directory
@@ -59,7 +42,7 @@ public:
         Node *first;
         Node *tail;
         size_t chainSize;
-        size_t numHashedDigits; // number of digits used to differentiate this bucket
+        int numHashedDigits; // number of digits used to differentiate this bucket
         size_t hashedIndex;
 
         DirEntry()
@@ -88,4 +71,23 @@ private:
     uint64_t hashFunction(std::string key);
     void insertNodeToBucket(Node *node, DirEntry *dirEntry);
     void rehashBucket(DirEntry *dirEntry);
+};
+
+class BufferPool
+{
+public:
+    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages); // constructor
+    ~BufferPool();                                                         // destructor to free memory
+    size_t initialDirSize;                                                 // Initial number of buckets in hash map
+    size_t maxDirSize;                                                     // Maximum number of buckets in hash map
+    size_t maxPages;
+    size_t numPages; // Maximum number of pages in buffer pool
+    std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
+    int addPage(uint64_t *buffer);
+
+private:
+    HashMap hashMap;
+    std::vector<std::string> storedPages;
+    std::optional<std::string> get_next_eviction();
+    int evict();
 };

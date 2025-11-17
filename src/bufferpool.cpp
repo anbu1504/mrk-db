@@ -1,17 +1,17 @@
-#include "bufferpool.hpp";
-#include "xxhash64.h";
-#include <unordered_set>;
-#include <cmath>;
+#include "bufferpool.hpp"
+#include "xxhash64.h"
+#include <unordered_set>
+#include <cmath>
 
 /**
  * @brief Constructor for the BufferPool class
  */
 
 BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPagesAmount)
-    : hashMap(initialAmount, maximalAmount),
-      initialDirSize(initialAmount),
+    : initialDirSize(initialAmount),
       maxDirSize(maximalAmount),
-      maxPages(maxPagesAmount) {};
+      maxPages(maxPagesAmount),
+      hashMap(initialAmount, maximalAmount) {};
 
 /**
  * @brief Destructor for the BufferPool class
@@ -31,11 +31,11 @@ std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, in
         std::tuple<int, uint64_t *> returnValue = std::make_tuple(node->pageSize, node->page);
         return returnValue;
     }
-    else {
+    else
+    {
         return std::nullopt;
     }
 }
-
 
 /**
  * @brief Constructor for the HashMap class
@@ -165,8 +165,8 @@ void HashMap::rehashBucket(DirEntry *dirEntry)
 
 int HashMap::extendDir()
 {
-    int currDirSize = directory.size();
-    int newDirSize = 2 * currDirSize;
+    size_t currDirSize = directory.size();
+    size_t newDirSize = 2 * currDirSize;
     if (newDirSize > maxDirSize)
     {
         return 1; // since we can't go past the maximum allowed directory size
@@ -190,7 +190,7 @@ int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
     DirEntry *dirEntry = directory[maskedHashPage];
     Node *insertNode = new Node(pageName, page, pageSize);
 
-    if (dirEntry->chainSize >= bucketOverflowThreshold)
+    if (dirEntry->chainSize >= size_t(bucketOverflowThreshold))
     {
         if (dirEntry->numHashedDigits < numBitsUsed)
         {
@@ -204,12 +204,18 @@ int HashMap::insert(std::string pageName, uint64_t *page, size_t pageSize)
             int extendDirResult = extendDir();
             if (extendDirResult == 1)
             {
+                delete insertNode;
                 return 1; // i.e. we have exceeded the directory size
             }
             rehashBucket(dirEntry);
         }
-        insertNodeToBucket(insertNode, dirEntry);
+        // we need to recompute the target bucket after any rehash/extending that happens
+        hashedPageName = hashFunction(pageName);
+        mask = (numBitsUsed == 0) ? 0 : ((1ULL << numBitsUsed) - 1);
+        maskedHashPage = hashedPageName & mask;
+        dirEntry = directory[maskedHashPage];
     }
+    insertNodeToBucket(insertNode, dirEntry);
     return 0; // insert success
 }
 
@@ -286,9 +292,6 @@ std::optional<HashMap::Node *> HashMap::remove(std::string pageName)
             prev = curr;
             curr = curr->next;
         }
-        if (!removeNode)
-        {
-            return std::nullopt; // if we reach here, that means there is no node that has a matching page name
-        }
+        return std::nullopt; // if we reach here, that means there is no node that has a matching page name
     }
 }

@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -g -std=c++17
 LDFLAGS = 
-EXECUTABLE = mrkdb_tests
+EXECUTABLE = bufferpool_tests
 
 BUILD_DIR = build
 SRC_DIR = src
@@ -10,7 +10,7 @@ INCLUDE_DIR = include
 
 LIB_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 
-TEST_MAIN = $(TEST_DIR)/mrkdb_tests.cpp
+TEST_MAIN = $(TEST_DIR)/bufferpool_tests.cpp
 
 LIB_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(LIB_SOURCES))
 
@@ -29,7 +29,7 @@ $(EXECUTABLE): $(OBJECTS)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(BUILD_DIR)/mrkdb_tests.o: $(TEST_DIR)/mrkdb_tests.cpp
+$(BUILD_DIR)/bufferpool_tests.o: $(TEST_DIR)/bufferpool_tests.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 .PHONY: all clean
