@@ -22,8 +22,8 @@ BufferPool::~BufferPool()
 
 std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset)
 {
-    std::string key = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
-    std::optional<HashMap::Node *> searchResult = hashMap.search(key);
+    std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
+    std::optional<HashMap::Node *> searchResult = hashMap.search(pageName);
 
     if (searchResult.has_value())
     {
@@ -35,6 +35,33 @@ std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, in
     {
         return std::nullopt;
     }
+}
+
+int BufferPool::addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize)
+{
+    // CHECK FOR DUPLICATES!!!!!
+
+    if (numPages == maxPages){
+        evict(); // Elaborate on after implementing evict
+    }
+
+    std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
+    int insertResult = hashMap.insert(pageName, buffer, pageSize);
+
+    // Evict until successful insert option:
+    // while (insertResult != 0){
+    //     evict();
+    //     insertResult = hashMap.insert(pageName, buffer, pageSize);
+    // }
+
+    // Fail after one insert option:
+    if (insertResult != 0){
+        return 1;
+    }
+
+    numPages++;
+    storedPages.push_back(pageName);
+
 }
 
 /**

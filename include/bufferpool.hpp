@@ -11,6 +11,25 @@
 #define PAGE_SIZE 4096
 #define BUCKET_OVERFLOW_THRESHOLD 4
 
+class BufferPool
+{
+public:
+    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages); // constructor
+    ~BufferPool();                                                         // destructor to free memory
+    size_t initialDirSize;                                                 // Initial number of buckets in hash map
+    size_t maxDirSize;                                                     // Maximum number of buckets in hash map
+    size_t maxPages;  
+    size_t numPages;                                                     // Maximum number of pages in buffer pool
+    std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
+    int addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize);
+
+private:
+    HashMap hashMap;
+    std::vector<std::string> storedPages;
+    std::optional<std::string> get_next_eviction();
+    int evict();
+};
+
 class HashMap
 {
     friend class HashMapTester;
