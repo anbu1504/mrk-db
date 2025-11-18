@@ -11,6 +11,7 @@ BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPag
     : initialDirSize(initialAmount),
       maxDirSize(maximalAmount),
       maxPages(maxPagesAmount),
+      clockHandle(0),
       hashMap(initialAmount, maximalAmount) {};
 
 /**
@@ -37,30 +38,44 @@ std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, in
     }
 }
 
-int BufferPool::addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize)
+// Maybe don't need the error code
+// Return Value: Tuple of error code and buffer of evicted page (or nullptr)
+std::tuple<int, uint64_t *> BufferPool::addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize)
 {
-    // CHECK FOR DUPLICATES!!!!!
+    // Assert that this page is not in bufferpool already?
+    std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
+    int evictedIndex = -1;
+    uint64_t *evictedBuffer = nullptr;
 
     if (numPages == maxPages){
-        evict(); // Elaborate on after implementing evict
+        evictedBuffer = evict(); // Elaborate on after implementing evict
     }
 
-    std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
     int insertResult = hashMap.insert(pageName, buffer, pageSize);
 
-    // Evict until successful insert option:
+    // Evict until successful insert option: (Prolly not needed if we disable the chain limit when directory is max)
     // while (insertResult != 0){
-    //     evict();
+    //     evictedIndex evict();
     //     insertResult = hashMap.insert(pageName, buffer, pageSize);
     // }
 
-    // Fail after one insert option:
+    // Fail after one insert option: (Also prolly not needed if we disable the chain limit when directory is max)
     if (insertResult != 0){
-        return 1;
+        return std::make_tuple(1, evictedBuffer);
+    }
+
+    if (evictedIndex != -1){
+        clockVector[evictedIndex] = pageName;
+    } else {
+        clockVector[numPages];
     }
 
     numPages++;
-    storedPages.push_back(pageName);
+    return std::make_tuple(0, evictedBuffer);
+}
+
+// Returns clockVector position of evicted frame (Return the page buffer??)
+uint64_t *BufferPool::evict(){
 
 }
 

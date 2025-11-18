@@ -83,11 +83,11 @@ public:
     size_t maxPages;  
     size_t numPages;                                                     // Maximum number of pages in buffer pool
     std::optional<std::tuple<int, uint64_t *>> searchPage(int sstNum, int pageOffset);
-    int addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize);
+    std::tuple<int, uint64_t *> addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize);
 
 private:
     HashMap hashMap;
-    std::vector<std::string> storedPages;
-    std::optional<std::string> get_next_eviction();
-    int evict();
+    std::vector<std::string> clockVector;
+    uint64_t *evict();
+    int clockHandle;
 };
