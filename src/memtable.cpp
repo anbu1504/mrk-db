@@ -1,4 +1,5 @@
 #include "../include/memtable.hpp"
+#include "../include/bloomfilter.hpp"
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
@@ -328,6 +329,22 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     close(fd);
     return std::make_tuple(flushed_size, num_internal_nodes, min, max);
 }
+
+// Bloom Filter Stuff
+
+BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data) {
+    ssize_t num_keys = memtable_data->size() / 2;
+
+    BloomFilter bloom_filter(num_keys);
+
+    for (int key_num = 0; key_num < num_keys; key_num++) {
+        bloom_filter.addKey(memtable_data->at(key_num * 2));
+    }
+
+    return bloom_filter;
+}
+
+// B-Tree Stuff
 
 std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memtable_data) {
     uint64_t num_internal_nodes = 1; // Starts at 1 to account for the root node
