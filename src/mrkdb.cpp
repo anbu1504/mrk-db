@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <utility> // Needed for std::swap
 #include <tuple> // Needed for std::get
+#include <cstring>
 
 #define METADATA_FILENAME ".metadata"
 #define PAGE_SIZE 4096
@@ -378,7 +379,7 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t * buffer, ssize_t 
 
     else {
         uint64_t * bufferFromBP = std::get<1>(bufferPoolRead.value());
-        std::memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
+        memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
         return numBytesToRead;
     }
 }
