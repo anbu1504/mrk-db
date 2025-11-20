@@ -1,6 +1,7 @@
 #pragma once
 
 #include "memtable.hpp"
+#include "bufferpool.hpp"
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -28,12 +29,17 @@ private:
     // Number of SSTs
     int sstCount;
 
+    // Bufferpool
+    BufferPool* bufferPool;
+
     // For each SST, records a tuple of <numEntries, numInternalNodes, minKey, maxKey>
     std::vector<std::tuple<size_t, size_t, uint64_t, uint64_t>> sstMetadataCache;
 
     // Private helper functions
     std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
     void mergeSort(std::vector<kvPairs>* vectors);
+    ssize_t comboRead(int sstNumber, int pageOffset, uint64_t * buffer, ssize_t numBytesToRead); // return number of bytes of read
+
 
 public:
     /**
