@@ -11,8 +11,12 @@ BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPag
     : initialDirSize(initialAmount),
       maxDirSize(maximalAmount),
       maxPages(maxPagesAmount),
-      clockHandle(0),
-      hashMap(new HashMap(initialAmount, maximalAmount)) {};
+      numPages(0),
+      hashMap(new HashMap(initialAmount, maximalAmount)),
+      clockHandle(0)
+{
+    clockVector.reserve(maxPagesAmount);
+};
 
 /**
  * @brief Destructor for the BufferPool class
