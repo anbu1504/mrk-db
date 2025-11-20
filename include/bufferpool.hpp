@@ -86,7 +86,7 @@ public:
     std::tuple<int, uint64_t *> addPage(int sstNum, int pageOffset, uint64_t *buffer, size_t pageSize);
 
 private:
-    HashMap hashMap;
+    HashMap *hashMap;
     std::vector<std::string> clockVector;
     uint64_t *evict();
     int clockHandle;

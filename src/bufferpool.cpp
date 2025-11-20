@@ -12,7 +12,7 @@ BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPag
       maxDirSize(maximalAmount),
       maxPages(maxPagesAmount),
       clockHandle(0),
-      hashMap(initialAmount, maximalAmount) {};
+      hashMap(new HashMap(initialAmount, maximalAmount)) {};
 
 /**
  * @brief Destructor for the BufferPool class
@@ -24,11 +24,12 @@ BufferPool::~BufferPool()
 std::optional<std::tuple<int, uint64_t *>> BufferPool::searchPage(int sstNum, int pageOffset)
 {
     std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
-    std::optional<HashMap::Node *> searchResult = hashMap.search(pageName);
+    std::optional<HashMap::Node *> searchResult = hashMap->search(pageName);
 
     if (searchResult.has_value())
     {
         HashMap::Node *node = searchResult.value();
+        node->accessBit = true;
         std::tuple<int, uint64_t *> returnValue = std::make_tuple(node->pageSize, node->page);
         return returnValue;
     }
@@ -44,14 +45,14 @@ std::tuple<int, uint64_t *> BufferPool::addPage(int sstNum, int pageOffset, uint
 {
     // Assert that this page is not in bufferpool already?
     std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
-    int evictedIndex = -1;
     uint64_t *evictedBuffer = nullptr;
 
     if (numPages == maxPages){
         evictedBuffer = evict(); // Elaborate on after implementing evict
+        numPages = numPages - 1;
     }
 
-    int insertResult = hashMap.insert(pageName, buffer, pageSize);
+    int insertResult = hashMap->insert(pageName, buffer, pageSize);
 
     // Evict until successful insert option: (Prolly not needed if we disable the chain limit when directory is max)
     // while (insertResult != 0){
@@ -64,19 +65,43 @@ std::tuple<int, uint64_t *> BufferPool::addPage(int sstNum, int pageOffset, uint
         return std::make_tuple(1, evictedBuffer);
     }
 
-    if (evictedIndex != -1){
-        clockVector[evictedIndex] = pageName;
+    if (evictedBuffer){
+        clockVector[clockHandle - 1] = pageName; // Fix the evicted Index becaus ei think doesnt exist now
     } else {
-        clockVector[numPages];
+        clockVector[numPages] = pageName;
     }
 
     numPages++;
     return std::make_tuple(0, evictedBuffer);
 }
 
-// Returns clockVector position of evicted frame (Return the page buffer??)
-uint64_t *BufferPool::evict(){
+// Returns the page buffer of the evicted page
+uint64_t *BufferPool::evict()
+{
+	//assert bufferpool is full??
+	std::string currPageName = clockVector[clockHandle];
+    std::optional<HashMap::Node *> searchResult;
+    HashMap::Node *currNode;
+    uint64_t *evictedBuffer;
 
+    //assert(searchResult.has_value());
+    bool notFound = true;
+    while (notFound){
+        searchResult = hashMap->search(currPageName);
+        if (searchResult.has_value()) {
+            currNode = searchResult.value();
+        }
+        if (currNode->accessBit){
+            currNode->accessBit = false;
+        } else {
+            notFound = false;
+            evictedBuffer = currNode->page;
+            delete currNode;
+        }
+        clockHandle = (clockHandle + 1) % numPages;
+    }
+
+    return evictedBuffer;
 }
 
 /**
