@@ -200,7 +200,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
         // Keep going until we reach a leaf node (leaf nodes start at page #(1 + internalNodeCount))
         while (currPage < 1 + internalNodeCount) {
-            std::cout << "Inside while loop!" << std::endl;
             comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
             numKeysInNode = pageBuf[0];
@@ -252,11 +251,8 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
                 }
             }
         }
-        std::cout << "finished while loop!" << std::endl;
         candidatePageNum = currPage;
-        std::cout << "before read!" << std::endl;
         bytesRead = comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
-        std::cout << "after read!" << std::endl;
         // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
         itemsRead = bytesRead / sizeof(uint64_t);
 
@@ -287,7 +283,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
     // Binary search to find the correct key within pageBuf
     while (lo <= hi) {
-        std::cout << "Second while loop!" << std::endl;
         mid = lo + (hi - lo) / 2;
 
         midKey = pageBuf[mid * 2];
@@ -300,13 +295,11 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
             break;
         }
     }
-    std::cout << "second while loop exit!" << std::endl;
 
     // At this point, mid is either equal to the index of currKey itself,
     // or the next smallest key after currKey (if currKey wasn't found)
 
     while (!keysToFind.empty()) {
-        std::cout << "third while loop!" << std::endl;
         currKey = keysToFind.back();
         midKey = pageBuf[mid * 2];
 
@@ -315,7 +308,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
             // If mid is out of bounds, read next page and set mid to 0
             if (mid >= keysRead) {
-                std::cout << "fourth while loop!" << std::endl;
                 candidatePageNum++;
                 bytesRead = comboRead(sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
                 // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * candidatePageNum);
@@ -337,7 +329,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
         keysToFind.pop_back();
     }
-    std::cout << "exit third while loop!" << std::endl;
 
     return std::make_tuple(foundPairs, keysNotFound);
 }

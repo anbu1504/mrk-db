@@ -3,6 +3,8 @@
 #include <unordered_set>
 #include <cmath>
 
+#define PRINT(x) (std::cout << x << std::endl)
+
 /**
  * @brief Constructor for the BufferPool class
  */
@@ -56,7 +58,9 @@ std::tuple<int, uint64_t *> BufferPool::addPage(int sstNum, int pageOffset, uint
         numPages = numPages - 1;
     }
 
+    PRINT("top");
     int insertResult = hashMap->insert(pageName, buffer, pageSize);
+    PRINT("bottom");
 
     // Evict until successful insert option: (Prolly not needed if we disable the chain limit when directory is max)
     // while (insertResult != 0){
@@ -200,8 +204,10 @@ void HashMap::rehashBucket(DirEntry *dirEntry)
 
     // Creates all indices that are point to bucket being rehashed
     // Creates prefixes that will be 'OR'ed to current hashedIndex to generate each index
+
     for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix)
     {
+        PRINT("hmm");
         size_t combined = (prefix << dirEntry->numHashedDigits) | dirEntry->hashedIndex;
         // Assigns all indices that start with 0 to old dirEntry
         if (((combined >> (numBitsUsed - 1)) & 1) == 0)
@@ -222,6 +228,7 @@ void HashMap::rehashBucket(DirEntry *dirEntry)
 
     while (chainCurrent)
     {
+        PRINT("In chain current while loop - Anbu");
         uint64_t hashedPageName = hashFunction(chainCurrent->pageName);
         uint64_t mask = (1ULL << numBitsUsed) - 1;
 
