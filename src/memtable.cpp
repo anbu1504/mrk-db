@@ -1,5 +1,5 @@
 #include "../include/memtable.hpp"
-#include "../include/bloomfilter.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
@@ -283,11 +283,15 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
     std::vector<BTNode> internal_nodes = constructInternalNodes(&memtable_data);
     std::vector<uint64_t> internal_data = flattenInternalNodes(&internal_nodes);
+    // Construct the bloom filter, and flatten it for writing to disk
+    // BloomFilter bloomFilter = constructBloomFilter(&memtable_data);
+    // std::vector<unsigned long long> x = bloomFilter.flattenBloomFilter();
+
     num_internal_nodes = internal_nodes.size();
 
 
     int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd == -1){
+    if (fd == -1) {
         close(fd);
         throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
     }
@@ -332,7 +336,7 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
 
 // Bloom Filter Stuff
 
-BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data) {
+BloomFilter Memtable::constructBloomFilter(std::vector<uint64_t>* memtable_data) {
     ssize_t num_keys = memtable_data->size() / 2;
 
     BloomFilter bloom_filter(num_keys);

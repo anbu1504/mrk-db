@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../include/bloomfilter.hpp"
 #include <iostream>
 #include <cstdint>
 #include <algorithm>
@@ -64,6 +65,7 @@ private:
     uint64_t getMin(Node* node); // helper for flush
     std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data); // helper for flush (B-Tree)
     std::vector<uint64_t> flattenInternalNodes(std::vector<BTNode>* internalNodes); // helper for flush (B-Tree)
+    BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data);
     std::vector<BTNode> constructLayer(
         uint64_t page_offset,
         uint64_t layer_size,
