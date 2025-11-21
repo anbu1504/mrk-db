@@ -8,7 +8,7 @@
 #include <vector>
 #include <tuple>
 #include <optional>
-#define PAGE_SIZE 4096
+
 #define BUCKET_OVERFLOW_THRESHOLD 4
 
 class HashMap

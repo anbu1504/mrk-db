@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../include/bloomfilter.hpp"
+#include "bloomfilter.hpp"
+#include "constants.hpp"
 #include <iostream>
 #include <cstdint>
 #include <algorithm>

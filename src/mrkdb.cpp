@@ -11,14 +11,10 @@
 #include <cstring>
 
 #define METADATA_FILENAME ".metadata"
-#define PAGE_SIZE 4096
-#define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 #define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
 #define INITIAL_DIR_SIZE 4
 #define MAX_DIR_SIZE 64
 #define MAX_NUM_PAGES 4096
-#define PRINT(x) (std::cout << x << std::endl)
-
 
 int DB::Open(const std::string dbName) {
     databaseName = dbName;

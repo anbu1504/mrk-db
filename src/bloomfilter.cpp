@@ -2,10 +2,6 @@
 #include "../external/xxhash64.h"
 #include <iostream>
 
-#define ULLONGS_PER_PAGE PAGE_SIZE / sizeof(unsigned long long)
-#define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
-#define PRINT(x) (std::cout << x << std::endl)
-
 /**
  * @brief Constructor #1 for the BloomFilter class
  */

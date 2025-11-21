@@ -10,11 +10,8 @@
 #include <cerrno>
 #include <cstring>
 
-#define PAGE_SIZE 4096
-#define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 // Append the elements of v2 to v1
 #define VEC_APPEND(v1, v2) ((v1).insert((v1).end(), (v2).begin(), (v2).end()))
-#define PRINT(x) (std::cout << x << std::endl)
 
 /**
  * @brief Constructor to initialize the memtable with a size threshold.

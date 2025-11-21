@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.hpp"
 #include "memtable.hpp"
 #include "bufferpool.hpp"
 #include <cstdint>
@@ -9,7 +10,7 @@
 #include <filesystem>
 
 #define THRESHOLD 16384
-#define USE_BTREE_SEARCH false
+#define USE_BTREE_SEARCH true
 
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
 

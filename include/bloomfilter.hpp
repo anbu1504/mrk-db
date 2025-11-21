@@ -1,7 +1,10 @@
+#pragma once
+
+#include "constants.hpp"
 #include <vector>
 #include <bitset>
 
-#define PAGE_SIZE 4096
+#define ULLONGS_PER_PAGE PAGE_SIZE / sizeof(unsigned long long)
 #define BITSET_SIZE 64 // size of unsigned long long
 
 #define BITS_PER_ENTRY 12
@@ -21,7 +24,7 @@ public:
 
     uint64_t getTotalBits();
     void addKey(uint64_t key);
-    void initFromBuf(unsigned long long pageBuf[PAGE_SIZE / sizeof(unsigned long long)]);
+    void initFromBuf(unsigned long long pageBuf[ULLONGS_PER_PAGE]);
     bool checkKey(uint64_t key);
     std::vector<unsigned long long> flattenBloomFilter();
     void printish();

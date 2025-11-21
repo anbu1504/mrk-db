@@ -3,8 +3,6 @@
 #include <unordered_set>
 #include <cmath>
 
-#define PRINT(x) (std::cout << x << std::endl)
-
 /**
  * @brief Constructor for the BufferPool class
  */
