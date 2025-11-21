@@ -63,7 +63,7 @@ private:
     void inorderTraversalDelRec(std::vector<uint64_t> *entries, Node* node); // recursive inorder traversal
     uint64_t getMax(Node* node); // helper for flush
     uint64_t getMin(Node* node); // helper for flush
-    std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data); // helper for flush (B-Tree)
+    std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data, uint64_t num_filter_pages); // helper for flush (B-Tree)
     std::vector<uint64_t> flattenInternalNodes(std::vector<BTNode>* internalNodes); // helper for flush (B-Tree)
     BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data);
     std::vector<BTNode> constructLayer(
@@ -84,7 +84,7 @@ public:
     size_t getSize(); // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max); // scan method
     std::optional<uint64_t> getValue(uint64_t key); 
-    std::tuple<size_t, size_t, uint64_t, uint64_t>  flushToDiskBTree(std::string filename); // flush to disk as a B-Tree
+    std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t>  flushToDiskBTree(std::string filename); // flush to disk as a B-Tree
     Node* getRoot(); // get root of memtable
     bool isEmpty(); // helper function for checking if empty
 };

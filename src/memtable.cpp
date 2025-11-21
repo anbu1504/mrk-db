@@ -14,6 +14,7 @@
 #define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 // Append the elements of v2 to v1
 #define VEC_APPEND(v1, v2) ((v1).insert((v1).end(), (v2).begin(), (v2).end()))
+#define PRINT(x) (std::cout << x << std::endl)
 
 /**
  * @brief Constructor to initialize the memtable with a size threshold.
@@ -265,10 +266,10 @@ uint64_t Memtable::getMin(Node* node) {
     }
 }
 
-std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::string filename) {
+std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::string filename) {
 
     if (root == nullptr){
-        return std::make_tuple(0, 0, 0, 0);
+        return std::make_tuple(0, 0, 0, 0, 0);
     }
 
     // ========== Metadata Stuff Begins ==========
@@ -280,12 +281,16 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     size_t num_internal_nodes;
 
     std::vector<uint64_t> memtable_data = inorderTraversalDel();
-    // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
-    std::vector<BTNode> internal_nodes = constructInternalNodes(&memtable_data);
-    std::vector<uint64_t> internal_data = flattenInternalNodes(&internal_nodes);
     // Construct the bloom filter, and flatten it for writing to disk
-    // BloomFilter bloomFilter = constructBloomFilter(&memtable_data);
-    // std::vector<unsigned long long> x = bloomFilter.flattenBloomFilter();
+    BloomFilter filter = constructBloomFilter(&memtable_data);
+    std::vector<unsigned long long> filter_data = filter.flattenBloomFilter();
+    size_t filter_bytes = filter_data.size() * sizeof(unsigned long long);
+    // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
+    std::vector<BTNode> internal_nodes = constructInternalNodes(
+        &memtable_data,
+        CEIL_DIV(filter_bytes, PAGE_SIZE)
+    );
+    std::vector<uint64_t> internal_data = flattenInternalNodes(&internal_nodes);
 
     num_internal_nodes = internal_nodes.size();
 
@@ -324,6 +329,17 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     // Each B-Tree internal node will be structured as follows:
     // [uint_64t: # keys in node]|[contiguous uint_64ts: keys/delimiters]|[contiguous uint_64ts: children]
 
+    written = write(fd, filter_data.data(), filter_data.size() * sizeof(unsigned long long));
+    checkWrite(written, fd, filter_data.size() * sizeof(unsigned long long));
+
+    if (filter_bytes % 4096) { // If we don't nicely fill out a page, pad it with 0s
+        size_t filter_padding = 4096 - (filter_bytes % 4096);
+        std::vector<char> filter_zero_buf(filter_padding, 0);
+        written = write(fd, filter_zero_buf.data(), filter_padding);
+        checkWrite(written, fd, filter_padding);
+
+    }
+
     written = write(fd, internal_data.data(), internal_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, internal_data.size() * sizeof(uint64_t));
     
@@ -331,17 +347,17 @@ std::tuple<size_t, size_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::s
     checkWrite(written, fd, memtable_data.size() * sizeof(uint64_t));
 
     close(fd);
-    return std::make_tuple(flushed_size, num_internal_nodes, min, max);
+    return std::make_tuple(flushed_size, num_internal_nodes, filter.getTotalBits(), min, max);
 }
 
 // Bloom Filter Stuff
 
 BloomFilter Memtable::constructBloomFilter(std::vector<uint64_t>* memtable_data) {
-    ssize_t num_keys = memtable_data->size() / 2;
+    size_t num_keys = memtable_data->size() / 2;
 
     BloomFilter bloom_filter(num_keys);
 
-    for (int key_num = 0; key_num < num_keys; key_num++) {
+    for (size_t key_num = 0; key_num < num_keys; key_num++) {
         bloom_filter.addKey(memtable_data->at(key_num * 2));
     }
 
@@ -350,7 +366,7 @@ BloomFilter Memtable::constructBloomFilter(std::vector<uint64_t>* memtable_data)
 
 // B-Tree Stuff
 
-std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memtable_data) {
+std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memtable_data, uint64_t num_filter_pages) {
     uint64_t num_internal_nodes = 1; // Starts at 1 to account for the root node
     uint64_t num_leaf_nodes = memtable_data->size() / ENTRIES_PER_PAGE;
 
@@ -361,7 +377,7 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
         layer_sizes.push_back(CEIL_DIV(layer_sizes.back(), BRANCH_FACTOR));
     }
 
-    uint64_t page_offset = num_internal_nodes + 1; // +1 to account for the metadata page
+    uint64_t page_offset = num_internal_nodes + num_filter_pages + 1; // +1 to account for the metadata page
 
     // let's make a tuple to represent each leaf page, which will just
     // contain the page number (including offset) and the max key in the page

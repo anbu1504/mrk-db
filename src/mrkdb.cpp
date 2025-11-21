@@ -17,7 +17,7 @@
 #define INITIAL_DIR_SIZE 4
 #define MAX_DIR_SIZE 64
 #define MAX_NUM_PAGES 4096
-// #define PRINT(x) (std::cout << x << std::endl)
+#define PRINT(x) (std::cout << x << std::endl)
 
 
 int DB::Open(const std::string dbName) {
@@ -37,6 +37,7 @@ int DB::Open(const std::string dbName) {
         for (int i = 0; i < sstCount; i++) {
             size_t entryCount;
             size_t internalNodeCount;
+            uint64_t filterBitCount;
             uint64_t minKey;
             uint64_t maxKey;
             std::ifstream sstFile(SST_PATH(i));
@@ -44,9 +45,10 @@ int DB::Open(const std::string dbName) {
             if (sstFile.is_open()) {
                 sstFile >> entryCount;
                 sstFile >> internalNodeCount;
+                sstFile >> filterBitCount;
                 sstFile >> minKey;
                 sstFile >> maxKey;
-                sstMetadataCache.push_back(std::make_tuple(entryCount, internalNodeCount, minKey, maxKey));
+                sstMetadataCache.push_back(std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
                 sstFile.close();
             } else {
                 return 1; // Error: This SST should exist
@@ -120,7 +122,7 @@ int DB::Put(uint64_t key, uint64_t value) {
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
-        std::tuple<size_t, size_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDiskBTree(SST_PATH(sstCount));
+        std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDiskBTree(SST_PATH(sstCount));
         sstMetadataCache.push_back(sstMetadata);
         sstCount++;
     }
@@ -154,11 +156,24 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     std::vector<uint64_t> keysNotFound;
     std::vector<uint64_t> keysToFind;
 
-    auto [entryCount, internalNodeCount, minKey, maxKey] = sstMetadataCache[sstNum];
+    auto [entryCount, internalNodeCount, filterBitCount, minKey, maxKey] = sstMetadataCache[sstNum];
+    uint64_t filterUllongCount = CEIL_DIV(filterBitCount, sizeof(unsigned long long) * 8);
+    uint64_t filterPageCount = CEIL_DIV(filterUllongCount * sizeof(unsigned long long), PAGE_SIZE);
+
+    BloomFilter filter(filterBitCount);
+    unsigned long long filterBuf[PAGE_SIZE / sizeof(unsigned long long)];
+
+    // Starts at 1 to account for root node
+    for (size_t pageNum = 1; pageNum <= filterPageCount; pageNum++) {
+        comboRead(sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
+        filter.initFromBuf(filterBuf);
+    }
 
     // Filter out keys that are outside the range of this SST
     for (size_t i = 0; i < keys.size(); i++) {
         if (keys[i] < minKey || keys[i] > maxKey) {
+            keysNotFound.push_back(keys[i]);
+        } else if (!filter.checkKey(keys[i])) {
             keysNotFound.push_back(keys[i]);
         } else {
             keysToFind.push_back(keys[i]);
@@ -184,8 +199,8 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     int candidatePageNum; // The page in which we want to look for keysToFind
 
     // Binary search variables
-    int lo = 1 + internalNodeCount;
-    int hi = numPages;
+    int lo = 1 + filterPageCount + internalNodeCount;
+    int hi = filterPageCount + internalNodeCount + numPages;
     int mid;
 
     uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)];
@@ -194,12 +209,12 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
     if (USE_BTREE_SEARCH) {
         // B-Tree search to find the correct page
-        uint64_t currPage = 1; // page corresponding to root node
+        uint64_t currPage = 1 + filterPageCount; // page corresponding to root node
         uint64_t numKeysInNode;
         uint64_t startOfChildren;
 
-        // Keep going until we reach a leaf node (leaf nodes start at page #(1 + internalNodeCount))
-        while (currPage < 1 + internalNodeCount) {
+        // Keep going until we reach a leaf node (leaf nodes start at page #(1 + filterPageCount + internalNodeCount))
+        while (currPage < 1 + filterPageCount + internalNodeCount) {
             comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
             numKeysInNode = pageBuf[0];
@@ -222,7 +237,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
             //         break;
             //     }
             // }
-
 
             // BINARY SEARCH
 
