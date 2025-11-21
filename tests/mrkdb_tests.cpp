@@ -1,15 +1,14 @@
-#include "../include/mrkdb.hpp"
-#include <iostream>
 #include <cassert>
+#include <iostream>
+
+#include "../include/mrkdb.hpp"
 
 #define MEMTABLE_SST_FILENAME "0.sst"
 #define METADATA_FILENAME ".metadata"
 
-class DBTester
-{
-public:
-    void testDBOpen()
-    {
+class DBTester {
+   public:
+    void testDBOpen() {
         const std::string testDB = "testdb";
 
         DB db;
@@ -54,10 +53,9 @@ public:
         assert(res3 == 300);
 
         std::cout << "DB::Get() for memtable test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
-
     }
 
     void testDBGetSST() {
@@ -84,7 +82,7 @@ public:
         assert(val3 == 3);
 
         std::cout << "DB::Get() for sst test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -113,7 +111,7 @@ public:
         assert(val3 == (2 * THRESHOLD) + 2);
 
         std::cout << "DB::GetSSTDeeper() for sst test deeper passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -144,7 +142,7 @@ public:
         assert(res1 == std::nullopt);
 
         std::cout << "DB::GetEmpty() for memtable test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -169,7 +167,7 @@ public:
         assert(res1 == std::nullopt);
 
         std::cout << "DB::GetEmptySST() for sst test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -184,7 +182,7 @@ public:
         db.Open(testDB);
 
         uint64_t j = 0;
-        for (uint64_t i = 0; i < (3 *THRESHOLD) + 5; i++) {
+        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
             db.Put(i, j);
             j++;
         }
@@ -194,7 +192,7 @@ public:
         assert(res1 == std::nullopt);
 
         std::cout << "DB::GetEmptySSTDeeper() for sst test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -239,7 +237,7 @@ public:
         }
 
         std::cout << "DB::Scan() for memtable test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -271,7 +269,7 @@ public:
         assert(res1.empty());
 
         std::cout << "DB::ScanEmpty() for memtable test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -296,7 +294,7 @@ public:
         uint64_t exp_k2 = 3, exp_v2 = 3;
 
         kvPairs res1 = db.Scan(1, 3);
-        
+
         assert(res1.size() == 3);
 
         {
@@ -315,7 +313,7 @@ public:
         }
 
         std::cout << "DB::Scan() for sst test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -343,17 +341,17 @@ public:
         assert(res1.size() == 19);
 
         for (size_t i = 0; i < res1.size(); ++i) {
-            const auto &t = res1[i];
+            const auto& t = res1[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
             // the notion is that the key and values are the same as per how we inserted it
-            // into our database, so we know that it is correct if the key is equal to the value 
+            // into our database, so we know that it is correct if the key is equal to the value
             // for all returned things in our scan query
             assert(k == v);
         }
 
         std::cout << "DB::ScanSSTDeeper() for sst deeper test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -378,10 +376,10 @@ public:
 
         kvPairs res1 = db.Scan(key1, key2);
 
-        assert(res1.size() == 0); // since keys are out of range
+        assert(res1.size() == 0);  // since keys are out of range
 
         std::cout << "DB::ScanSSTDeeper() for sst empty test passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -411,22 +409,22 @@ public:
         kvPairs res1 = db.Scan(key1, key2);
         std::cout << "DB::ScanAcrossSSTs() after scan!" << std::endl;
 
-        assert(res1.size() == (3 * THRESHOLD) + 1); // size should be 49513
+        assert(res1.size() == (3 * THRESHOLD) + 1);  // size should be 49513
 
         std::cout << "DB::ScanAcrossSSTs() second for loop!" << std::endl;
         for (size_t i = 0; i < res1.size(); ++i) {
-            const auto &t = res1[i];
+            const auto& t = res1[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
             // the notion is that the key and values are the same as per how we inserted it
-            // into our database, so we know that it is correct if the key is equal to the value 
+            // into our database, so we know that it is correct if the key is equal to the value
             // for all returned things in our scan query
             assert(k == v);
         }
         std::cout << "DB::ScanAcrossSSTs() outside second for loop!" << std::endl;
 
         std::cout << "DB::ScanAcrossSSTs() for ssts passed!" << std::endl;
-        
+
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
@@ -466,7 +464,7 @@ public:
 
 int main() {
     DBTester tester;
-    
+
     tester.testDBOpen();
     tester.testDBGetMemtable();
     tester.testDBGetSST();

@@ -1,14 +1,16 @@
-#define _ALL_SOURCE // Needed for O_DIRECT(?)
+#define _ALL_SOURCE  // Needed for O_DIRECT(?)
 
 #include "../include/mrkdb.hpp"
-#include <algorithm>
-#include <filesystem>
-#include <fcntl.h> // Also needed for O_DIRECT(?)
-#include <fstream>
+
+#include <fcntl.h>  // Also needed for O_DIRECT(?)
 #include <unistd.h>
-#include <utility> // Needed for std::swap
-#include <tuple> // Needed for std::get
+
+#include <algorithm>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <tuple>    // Needed for std::get
+#include <utility>  // Needed for std::swap
 
 #define METADATA_FILENAME ".metadata"
 #define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
@@ -22,7 +24,7 @@ int DB::Open(const std::string dbName) {
     bufferPool = new BufferPool(INITIAL_DIR_SIZE, MAX_DIR_SIZE, MAX_NUM_PAGES);
     sstCount = 0;
 
-    if (!std::filesystem::create_directory(dbName)) { // If the DB already exists
+    if (!std::filesystem::create_directory(dbName)) {  // If the DB already exists
         std::ifstream metadataFile(databaseName + "/" + METADATA_FILENAME);
 
         if (metadataFile.is_open()) {
@@ -44,10 +46,11 @@ int DB::Open(const std::string dbName) {
                 sstFile >> filterBitCount;
                 sstFile >> minKey;
                 sstFile >> maxKey;
-                sstMetadataCache.push_back(std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
+                sstMetadataCache.push_back(
+                    std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
                 sstFile.close();
             } else {
-                return 1; // Error: This SST should exist
+                return 1;  // Error: This SST should exist
             }
         }
     }
@@ -66,7 +69,11 @@ std::optional<uint64_t> DB::Get(uint64_t key) {
     kvPairs sstValues;
 
     for (int sstNum = sstCount - 1; sstNum >= 0; sstNum--) {
-        sstValues = std::get<0>(sstSearch({key, }, sstNum));
+        sstValues = std::get<0>(sstSearch(
+            {
+                key,
+            },
+            sstNum));
         if (!sstValues.empty()) {
             // Return value (index 1) from first KV-pair (index 0)
             return std::get<1>(sstValues[0]);
@@ -82,19 +89,21 @@ kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
     if (memtablePairs.size() == (key2 - key1)) {
         return memtablePairs;
     }
-    
+
     std::vector<uint64_t> keysToFind;
     size_t currIdx = 0;
 
     for (uint64_t i = key1; i <= key2; i++) {
         if (currIdx == memtablePairs.size() || i < std::get<0>(memtablePairs[currIdx])) {
             keysToFind.push_back(i);
-        } else { // i == memtableValues[currIdx][0]
+        } else {  // i == memtableValues[currIdx][0]
             currIdx++;
         }
     }
 
-    std::vector<kvPairs> allPairVectors = {memtablePairs, };
+    std::vector<kvPairs> allPairVectors = {
+        memtablePairs,
+    };
 
     std::tuple<kvPairs, std::vector<uint64_t>> binSearchRet;
 
@@ -105,9 +114,7 @@ kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
         keysToFind = std::get<1>(binSearchRet);
     }
 
-    std::sort(allPairVectors.begin(), allPairVectors.end(), [](kvPairs a, kvPairs b) {
-        return a.size() < b.size();
-    });
+    std::sort(allPairVectors.begin(), allPairVectors.end(), [](kvPairs a, kvPairs b) { return a.size() < b.size(); });
 
     mergeSort(&allPairVectors);
 
@@ -118,12 +125,13 @@ int DB::Put(uint64_t key, uint64_t value) {
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
-        std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata = memtable->flushToDiskBTree(SST_PATH(sstCount));
+        std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata =
+            memtable->flushToDiskBTree(SST_PATH(sstCount));
         sstMetadataCache.push_back(sstMetadata);
         sstCount++;
     }
 
-    return !success; // 0 for success, 1 for failure
+    return !success;  // 0 for success, 1 for failure
 };
 
 int DB::Close() {
@@ -184,7 +192,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     // Reverse our keysToFind list, since popping from the back is O(1)
     std::reverse(keysToFind.begin(), keysToFind.end());
 
-
     uint64_t currKey = keysToFind.back();
     // int fd = open(SST_PATH(sstNum).c_str(), O_RDONLY); // | O_DIRECT);
 
@@ -192,7 +199,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     // We multiply entryCount by 2 because there's a Key and Value for each "entry"
     int numPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
 
-    int candidatePageNum; // The page in which we want to look for keysToFind
+    int candidatePageNum;  // The page in which we want to look for keysToFind
 
     // Binary search variables
     int lo = 1 + filterPageCount + internalNodeCount;
@@ -205,7 +212,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
     if (USE_BTREE_SEARCH) {
         // B-Tree search to find the correct page
-        uint64_t currPage = 1 + filterPageCount; // page corresponding to root node
+        uint64_t currPage = 1 + filterPageCount;  // page corresponding to root node
         uint64_t numKeysInNode;
         uint64_t startOfChildren;
 
@@ -215,7 +222,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
             numKeysInNode = pageBuf[0];
             startOfChildren = 1 + numKeysInNode;
-            
+
             // If the key we're looking for is larger than the last delimiting
             // key, then we can just immediately go down to the rightmost child
             if (currKey > pageBuf[numKeysInNode]) {
@@ -243,8 +250,8 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
                 continue;
             }
 
-            lo = 1; // Corresponds to the second key (we alr. checked for left child of the first key)
-            hi = numKeysInNode - 1; // Index of last key (we alr. checked for right child of the last key)
+            lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
+            hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
 
             while (lo <= hi) {
                 mid = lo + (hi - lo) / 2;
@@ -255,7 +262,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
                     hi = mid - 1;
                 } else if (currKey > pageBuf[1 + mid]) {
                     lo = mid + 1;
-                } else { // pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
+                } else {  // pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
                     currPage = pageBuf[startOfChildren + mid];
                     break;
                 }
@@ -280,7 +287,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
                 lo = mid + 1;
             } else {
                 candidatePageNum = mid;
-                break; // We found the page that would contain the first key
+                break;  // We found the page that would contain the first key
             }
         }
     }
@@ -356,14 +363,11 @@ void DB::mergeSort(std::vector<kvPairs>* vectors) {
         merged.assign(CEIL_DIV(vectors->size(), 2), kvPairs());
 
         for (size_t i = 0; i < merged.size(); i++) {
-            if (i*2 + 1 == vectors->size()) {
-                merged[i] = vectors->at(i*2);
+            if (i * 2 + 1 == vectors->size()) {
+                merged[i] = vectors->at(i * 2);
             } else {
-                std::merge(
-                    vectors->at(i*2).begin(), vectors->at(i*2).end(),
-                    vectors->at(i*2 + 1).begin(), vectors->at(i*2 + 1).end(),
-                    std::back_inserter(merged[i])
-                );
+                std::merge(vectors->at(i * 2).begin(), vectors->at(i * 2).end(), vectors->at(i * 2 + 1).begin(),
+                           vectors->at(i * 2 + 1).end(), std::back_inserter(merged[i]));
             }
         }
 
@@ -371,21 +375,22 @@ void DB::mergeSort(std::vector<kvPairs>* vectors) {
     }
 }
 
-ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t * buffer, ssize_t numBytesToRead) {
+ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t numBytesToRead) {
     // try to read that page from the buffer pool
     // if unsuccessful, read from the disk
     // o/w copy over to buffer from result of buffer pool read
     // after you read, if you read from the disk, you should also enter that into the buffer pool
 
-    std::optional<std::tuple<int, uint64_t *>> bufferPoolRead = bufferPool->searchPage(sstNumber, pageOffset);
-    ssize_t bytesRead; 
+    std::optional<std::tuple<int, uint64_t*>> bufferPoolRead = bufferPool->searchPage(sstNumber, pageOffset);
+    ssize_t bytesRead;
     if (!bufferPoolRead.has_value()) {
         int fd = open(SST_PATH(sstNumber).c_str(), O_RDONLY);
         bytesRead = pread(fd, buffer, numBytesToRead, pageOffset);
-        uint64_t * bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
+        uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
         memcpy(bufferHeap, buffer, bytesRead);
-        std::tuple<int, uint64_t *> addResult = bufferPool->addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
-        uint64_t * evictBufferExists = std::get<1>(addResult);
+        std::tuple<int, uint64_t*> addResult =
+            bufferPool->addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
+        uint64_t* evictBufferExists = std::get<1>(addResult);
         if (evictBufferExists) {
             std::free(evictBufferExists);
         }
@@ -393,7 +398,7 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t * buffer, ssize_t 
     }
 
     else {
-        uint64_t * bufferFromBP = std::get<1>(bufferPoolRead.value());
+        uint64_t* bufferFromBP = std::get<1>(bufferPoolRead.value());
         memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
         return numBytesToRead;
     }

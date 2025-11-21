@@ -1,14 +1,14 @@
 #include "../include/memtable.hpp"
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
-#include <cstdlib>
 #include <optional>
-
-#include <fcntl.h>
-#include <unistd.h>  
-#include <cerrno>
-#include <cstring>
 
 // Append the elements of v2 to v1
 #define VEC_APPEND(v1, v2) ((v1).insert((v1).end(), (v2).begin(), (v2).end()))
@@ -37,61 +37,55 @@ void Node::deleteNode() {
         right->deleteNode();
         delete right;
     }
-    
 }
 
 std::optional<uint64_t> Memtable::getValueRec(Node* node, uint64_t k) {
-    if (node == nullptr){
+    if (node == nullptr) {
         return std::nullopt;
     }
 
-    if (node->key == k){
+    if (node->key == k) {
         return node->value;
 
-    } else if (node->key > k){
+    } else if (node->key > k) {
         return getValueRec(node->left, k);
 
     } else {
         return getValueRec(node->right, k);
-    } 
+    }
 }
 
-void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>> *entries, Node* node, uint64_t min, uint64_t max) {
+void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>>* entries, Node* node, uint64_t min,
+                           uint64_t max) {
     if (!node) return;
 
-    if (node->key > min)
-        scanTreeRec(entries, node->left, min, max);
+    if (node->key > min) scanTreeRec(entries, node->left, min, max);
 
-    if (node->key >= min && node->key <= max)
-        entries->push_back(std::make_tuple(node->key, node->value));
+    if (node->key >= min && node->key <= max) entries->push_back(std::make_tuple(node->key, node->value));
 
-    if (node->key < max)
-        scanTreeRec(entries, node->right, min, max);
+    if (node->key < max) scanTreeRec(entries, node->right, min, max);
 }
 
- 
 /**
  * @brief Method to recursively delete the entire AVL tree
  */
 
- void Memtable::deleteTree() {
+void Memtable::deleteTree() {
     if (!root) {
         return;
-    }
-    else {
+    } else {
         root->deleteNode();
         delete root;
         root = nullptr;
         size = 0;
     }
- }
+}
 
 /**
  * @brief Get the height of a node.
  */
 int Memtable::height(Node* node) {
-    if (node == nullptr)
-        return 0;
+    if (node == nullptr) return 0;
     return node->height;
 }
 
@@ -105,11 +99,9 @@ int Memtable::getBalance(Node* node) {
     return height(node->right) - height(node->left);
 }
 
-std::optional<uint64_t> Memtable::getValue(uint64_t key) {
-    return getValueRec(root, key);
-}
+std::optional<uint64_t> Memtable::getValue(uint64_t key) { return getValueRec(root, key); }
 
-std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uint64_t max){
+std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uint64_t max) {
     std::vector<std::tuple<uint64_t, uint64_t>> entries;
 
     scanTreeRec(&entries, root, min, max);
@@ -121,18 +113,16 @@ std::vector<std::tuple<uint64_t, uint64_t>> Memtable::scanTree(uint64_t min, uin
  * @brief Helper method to insert recursively
  */
 Node* Memtable::insertRec(Node* node, uint64_t key, uint64_t value) {
-    
     if (node == nullptr) {
         size++;
         return new Node(key, value);
     }
-    
+
     if (key < node->key) {
         node->left = insertRec(node->left, key, value);
-    }
-    else if (key > node->key) {
+    } else if (key > node->key) {
         node->right = insertRec(node->right, key, value);
-    }    
+    }
     node->height = 1 + std::max(height(node->left), height(node->right));
 
     int balance = getBalance(node);
@@ -157,9 +147,9 @@ Node* Memtable::insertRec(Node* node, uint64_t key, uint64_t value) {
     return node;
 }
 
-/** 
+/**
  * @brief Method to insert
- * */ 
+ * */
 bool Memtable::insert(uint64_t key, uint64_t value) {
     if (isThresholdReached()) {
         return false;
@@ -180,7 +170,7 @@ Node* Memtable::rotateRight(Node* y) {
 
     y->height = std::max(height(y->left), height(y->right)) + 1;
     x->height = std::max(height(x->left), height(x->right)) + 1;
-    
+
     return x;
 }
 
@@ -200,21 +190,14 @@ Node* Memtable::rotateLeft(Node* x) {
     return y;
 }
 
-size_t Memtable::getSize() {
-    return size;
-}
+size_t Memtable::getSize() { return size; }
 
-bool Memtable::isThresholdReached() {
-    return size >= threshold;
-}
+bool Memtable::isThresholdReached() { return size >= threshold; }
 
-Node* Memtable::getRoot() {
-    return root;
-}
+Node* Memtable::getRoot() { return root; }
 
-void Memtable::inorderTraversalDelRec(std::vector<uint64_t> *entries, Node* node){
-
-    if (node->left != nullptr){
+void Memtable::inorderTraversalDelRec(std::vector<uint64_t>* entries, Node* node) {
+    if (node->left != nullptr) {
         inorderTraversalDelRec(entries, node->left);
         delete node->left;
         node->left = nullptr;
@@ -223,17 +206,17 @@ void Memtable::inorderTraversalDelRec(std::vector<uint64_t> *entries, Node* node
     entries->push_back(node->key);
     entries->push_back(node->value);
 
-    if (node->right != nullptr){
+    if (node->right != nullptr) {
         inorderTraversalDelRec(entries, node->right);
         delete node->right;
         node->right = nullptr;
     }
 }
 
-std::vector<uint64_t> Memtable::inorderTraversalDel(){
+std::vector<uint64_t> Memtable::inorderTraversalDel() {
     std::vector<uint64_t> entries;
 
-    if (root != nullptr){
+    if (root != nullptr) {
         inorderTraversalDelRec(&entries, root);
         delete root;
         root = nullptr;
@@ -243,12 +226,10 @@ std::vector<uint64_t> Memtable::inorderTraversalDel(){
     return entries;
 }
 
-bool Memtable::isEmpty() {
-    return size == 0;
-}
+bool Memtable::isEmpty() { return size == 0; }
 
 uint64_t Memtable::getMax(Node* node) {
-    if (node->right == nullptr){
+    if (node->right == nullptr) {
         return node->key;
     } else {
         return getMax(node->right);
@@ -256,7 +237,7 @@ uint64_t Memtable::getMax(Node* node) {
 }
 
 uint64_t Memtable::getMin(Node* node) {
-    if (node->left == nullptr){
+    if (node->left == nullptr) {
         return node->key;
     } else {
         return getMin(node->left);
@@ -264,8 +245,7 @@ uint64_t Memtable::getMin(Node* node) {
 }
 
 std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBTree(std::string filename) {
-
-    if (root == nullptr){
+    if (root == nullptr) {
         return std::make_tuple(0, 0, 0, 0, 0);
     }
 
@@ -283,14 +263,10 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
     std::vector<unsigned long long> filter_data = filter.flattenBloomFilter();
     size_t filter_bytes = filter_data.size() * sizeof(unsigned long long);
     // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
-    std::vector<BTNode> internal_nodes = constructInternalNodes(
-        &memtable_data,
-        CEIL_DIV(filter_bytes, PAGE_SIZE)
-    );
+    std::vector<BTNode> internal_nodes = constructInternalNodes(&memtable_data, CEIL_DIV(filter_bytes, PAGE_SIZE));
     std::vector<uint64_t> internal_data = flattenInternalNodes(&internal_nodes);
 
     num_internal_nodes = internal_nodes.size();
-
 
     int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
@@ -310,7 +286,7 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
     written = write(fd, &max, sizeof(uint64_t));
     checkWrite(written, fd, sizeof(uint64_t));
 
-    size_t header_bytes = sizeof(size_t) + 3*sizeof(uint64_t);
+    size_t header_bytes = sizeof(size_t) + 3 * sizeof(uint64_t);
     size_t padding = 4096 - header_bytes;
     std::vector<char> zero_buf(padding, 0);
     written = write(fd, zero_buf.data(), padding);
@@ -329,17 +305,16 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
     written = write(fd, filter_data.data(), filter_data.size() * sizeof(unsigned long long));
     checkWrite(written, fd, filter_data.size() * sizeof(unsigned long long));
 
-    if (filter_bytes % 4096) { // If we don't nicely fill out a page, pad it with 0s
+    if (filter_bytes % 4096) {  // If we don't nicely fill out a page, pad it with 0s
         size_t filter_padding = 4096 - (filter_bytes % 4096);
         std::vector<char> filter_zero_buf(filter_padding, 0);
         written = write(fd, filter_zero_buf.data(), filter_padding);
         checkWrite(written, fd, filter_padding);
-
     }
 
     written = write(fd, internal_data.data(), internal_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, internal_data.size() * sizeof(uint64_t));
-    
+
     written = write(fd, memtable_data.data(), memtable_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, memtable_data.size() * sizeof(uint64_t));
 
@@ -364,17 +339,19 @@ BloomFilter Memtable::constructBloomFilter(std::vector<uint64_t>* memtable_data)
 // B-Tree Stuff
 
 std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memtable_data, uint64_t num_filter_pages) {
-    uint64_t num_internal_nodes = 1; // Starts at 1 to account for the root node
+    uint64_t num_internal_nodes = 1;  // Starts at 1 to account for the root node
     uint64_t num_leaf_nodes = memtable_data->size() / ENTRIES_PER_PAGE;
 
-    std::vector<uint64_t> layer_sizes = {CEIL_DIV(num_leaf_nodes, BRANCH_FACTOR), }; // the sizes of each internal layer, bottom-up
+    std::vector<uint64_t> layer_sizes = {
+        CEIL_DIV(num_leaf_nodes, BRANCH_FACTOR),
+    };  // the sizes of each internal layer, bottom-up
 
     while (layer_sizes.back() != 1) {
         num_internal_nodes += layer_sizes.back();
         layer_sizes.push_back(CEIL_DIV(layer_sizes.back(), BRANCH_FACTOR));
     }
 
-    uint64_t page_offset = num_internal_nodes + num_filter_pages + 1; // +1 to account for the metadata page
+    uint64_t page_offset = num_internal_nodes + num_filter_pages + 1;  // +1 to account for the metadata page
 
     // let's make a tuple to represent each leaf page, which will just
     // contain the page number (including offset) and the max key in the page
@@ -389,15 +366,14 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
     }
 
     // add the very last page, and the very last key in memdata_table
-    leaf_pages.push_back(std::make_tuple(page_offset + num_leaf_nodes - 1, memtable_data->at(memtable_data->size() - 2)));
+    leaf_pages.push_back(
+        std::make_tuple(page_offset + num_leaf_nodes - 1, memtable_data->at(memtable_data->size() - 2)));
 
+    std::vector<BTNode> finalNodeVec;  // A vector to hold our final output
 
-    std::vector<BTNode> finalNodeVec; // A vector to hold our final output
-
-    std::vector<std::tuple<uint64_t, uint64_t>> child_layer_data = leaf_pages; // list of page-nums and max-keys
-    std::vector<std::tuple<uint64_t, uint64_t>> curr_layer_data; // list of page-nums and max-keys
-    std::vector<BTNode> curr_layer; // list of nodes in the current layer
-
+    std::vector<std::tuple<uint64_t, uint64_t>> child_layer_data = leaf_pages;  // list of page-nums and max-keys
+    std::vector<std::tuple<uint64_t, uint64_t>> curr_layer_data;                // list of page-nums and max-keys
+    std::vector<BTNode> curr_layer;                                             // list of nodes in the current layer
 
     for (size_t layer_num = 0; layer_num < layer_sizes.size(); layer_num++) {
         // Used to calculate the actual page number of each node
@@ -424,12 +400,10 @@ std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memt
 // Constructs a layer of the B-Tree, and returns a list of BTNodes
 // (also stores current layer data in the curr_layer_data variable)
 std::vector<BTNode> Memtable::constructLayer(
-    uint64_t page_offset,
-    uint64_t layer_size,
-    std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
-    std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data // output for list of page-nums and max-keys
+    uint64_t page_offset, uint64_t layer_size, std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
+    std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data  // output for list of page-nums and max-keys
 ) {
-    std::vector<BTNode> curr_layer; // list of nodes in the current layer
+    std::vector<BTNode> curr_layer;  // list of nodes in the current layer
 
     // The collective total number of children to this layer
     uint64_t total_layer_children = child_layer_data->size();
@@ -452,11 +426,11 @@ std::vector<BTNode> Memtable::constructLayer(
         // Number of children for this node
         uint64_t node_children_count = min_children_per_node;
 
-        if (extra_children) { // If there're extra children, assign one to this node
+        if (extra_children) {  // If there're extra children, assign one to this node
             node_children_count++;
             extra_children--;
         }
-        
+
         std::vector<u_int64_t> keys_vector;
         std::vector<u_int64_t> children_vector;
 

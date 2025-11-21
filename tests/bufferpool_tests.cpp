@@ -1,18 +1,17 @@
-#include "../include/bufferpool.hpp"
-#include <iostream>
-#include <cassert>
-#include <filesystem>
-
 #include <fcntl.h>
-#include <unistd.h>
-#include <cstdint>
-#include <vector>
-#include <iostream>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <cassert>
+#include <cstdint>
+#include <filesystem>
+#include <iostream>
+#include <vector>
+
+#include "../include/bufferpool.hpp"
 
 class HashMapTester {
-public:
-
+   public:
     /**
      * Helper function to allocate a page
      */
@@ -82,20 +81,19 @@ public:
     }
 
     void test_extend_directory_reaches_max() {
-        HashMap hm(4, 8); // maxDir = 8
+        HashMap hm(4, 8);  // maxDir = 8
 
         assert(hm.directory.size() == 4);
 
         assert(hm.extendDir() == 0);
         assert(hm.directory.size() == 8);
 
-        assert(hm.extendDir() == 1);   // cannot extend further
+        assert(hm.extendDir() == 1);  // cannot extend further
 
         std::cout << "extendDir max limit test passed!\n\n" << std::endl;
     }
 
     void test_insert_trigger_rehash() {
-
         HashMap hm(2, 64);
         uint64_t* p = makePage(123);
 
@@ -111,7 +109,6 @@ public:
         hm.insert("J", p, 8);
         hm.insert("K", p, 8);
         hm.insert("L", p, 8);
-
 
         assert(hm.search("A").has_value());
         assert(hm.search("B").has_value());
@@ -162,11 +159,9 @@ public:
 
         std::cout << "Remove missing key test passed!\n\n" << std::endl;
     }
-
 };
 
 int main() {
-
     HashMapTester tester;
     tester.test_constructor();
     tester.test_insert_and_search();

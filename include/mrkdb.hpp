@@ -1,13 +1,14 @@
 #pragma once
 
-#include "constants.hpp"
-#include "memtable.hpp"
-#include "bufferpool.hpp"
 #include <cstdint>
+#include <filesystem>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <filesystem>
+
+#include "bufferpool.hpp"
+#include "constants.hpp"
+#include "memtable.hpp"
 
 #define THRESHOLD 16384
 #define USE_BTREE_SEARCH true
@@ -20,7 +21,8 @@ typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
  */
 class DB {
     friend class DBTester;
-private:
+
+   private:
     // Name of the database
     std::string databaseName;
 
@@ -39,21 +41,21 @@ private:
     // Private helper functions
     std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
     void mergeSort(std::vector<kvPairs>* vectors);
-    ssize_t comboRead(int sstNumber, int pageOffset, uint64_t * buffer, ssize_t numBytesToRead); // return number of bytes of read
+    ssize_t comboRead(int sstNumber, int pageOffset, uint64_t* buffer,
+                      ssize_t numBytesToRead);  // return number of bytes of read
 
-
-public:
+   public:
     /**
      * @brief Opens the database and prepares it to run.
-     * 
+     *
      * @param dbName Name of the database to open/create (if it doesn't already exist)
      */
-    
+
     int Open(const std::string dbName);
 
     /**
      * @brief Stores a key associated with a value.
-     * 
+     *
      * @param key The key to be stored
      * @param value The value to be associated with the key
      */

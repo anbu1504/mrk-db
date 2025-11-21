@@ -1,6 +1,8 @@
 #include "../include/bloomfilter.hpp"
-#include "../external/xxhash64.h"
+
 #include <iostream>
+
+#include "../external/xxhash64.h"
 
 /**
  * @brief Constructor #1 for the BloomFilter class
@@ -14,9 +16,7 @@ BloomFilter::BloomFilter(size_t num_keys)
  * @brief Constructor #2 for the BloomFilter class
  */
 BloomFilter::BloomFilter(uint64_t total_bits)
-    : total_bits(total_bits),
-      filter(CEIL_DIV(total_bits, BITSET_SIZE)),
-      num_bitsets_initialized(0) {}
+    : total_bits(total_bits), filter(CEIL_DIV(total_bits, BITSET_SIZE)), num_bitsets_initialized(0) {}
 
 /**
  * @brief Destructor for the BloomFilter class
@@ -70,9 +70,7 @@ std::vector<unsigned long long> BloomFilter::flattenBloomFilter() {
     return output;
 }
 
-uint64_t BloomFilter::getTotalBits() {
-    return total_bits;
-}
+uint64_t BloomFilter::getTotalBits() { return total_bits; }
 
 void BloomFilter::printish() {
     for (int i = 0; i < 5; i++) {
