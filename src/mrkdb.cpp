@@ -355,6 +355,10 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t n
 
     if (!bufferPoolRead.has_value()) {
         int fd = open(SST_PATH(sstNumber).c_str(), O_RDONLY);
+        if (fd == -1) {
+            close(fd);
+            throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
+        }
         bytesRead = pread(fd, buffer, numBytesToRead, pageOffset);
         uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
 
@@ -365,6 +369,7 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t n
         if (evictBufferExists) {
             std::free(evictBufferExists);
         }
+        close(fd);
         return bytesRead;
     }
 
