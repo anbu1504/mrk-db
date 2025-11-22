@@ -283,7 +283,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     return std::make_tuple(foundPairs, keysNotFound);
 }
 
-uint64_t DB::getNextBTreeNode(uint64_t currKey, uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)]) {
+uint64_t DB::getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf) {
     uint64_t numKeysInNode = pageBuf[0];
     uint64_t startOfChildren = 1 + numKeysInNode;
 
@@ -357,14 +357,16 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t n
 
     std::optional<std::tuple<int, uint64_t*>> bufferPoolRead = bufferPool->searchPage(sstNumber, pageOffset);
     ssize_t bytesRead;
+
     if (!bufferPoolRead.has_value()) {
         int fd = open(SST_PATH(sstNumber).c_str(), O_RDONLY);
         bytesRead = pread(fd, buffer, numBytesToRead, pageOffset);
         uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
+
         memcpy(bufferHeap, buffer, bytesRead);
-        std::tuple<int, uint64_t*> addResult =
-            bufferPool->addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
-        uint64_t* evictBufferExists = std::get<1>(addResult);
+
+        uint64_t* evictBufferExists = bufferPool->addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
+
         if (evictBufferExists) {
             std::free(evictBufferExists);
         }

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
-#include <tuple>
+// #include <tuple>
 #include <vector>
 
 #define BUCKET_OVERFLOW_THRESHOLD 4
@@ -66,7 +66,7 @@ class BufferPool {
     size_t maxPages;
     size_t numPages;  // Maximum number of pages in buffer pool
     std::optional<std::tuple<int, uint64_t*>> searchPage(int sstNum, int pageOffset);
-    std::tuple<int, uint64_t*> addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize);
+    uint64_t* addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize);
 
    private:
     HashMap* hashMap;

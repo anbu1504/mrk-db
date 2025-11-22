@@ -38,9 +38,8 @@ std::optional<std::tuple<int, uint64_t*>> BufferPool::searchPage(int sstNum, int
     }
 }
 
-// Maybe don't need the error code
-// Return Value: Tuple of error code and buffer of evicted page (or nullptr)
-std::tuple<int, uint64_t*> BufferPool::addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize) {
+// Return Value: Buffer of evicted page (or nullptr)
+uint64_t* BufferPool::addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize) {
     // Assert that this page is not in bufferpool already?
     std::string pageName = std::to_string(sstNum) + "_" + std::to_string(pageOffset);
     uint64_t* evictedBuffer = nullptr;
@@ -60,7 +59,7 @@ std::tuple<int, uint64_t*> BufferPool::addPage(int sstNum, int pageOffset, uint6
 
     // Fail after one insert option: (Also prolly not needed if we disable the chain limit when directory is max)
     if (insertResult != 0) {
-        return std::make_tuple(1, evictedBuffer);
+        return evictedBuffer;
     }
 
     if (evictedBuffer) {
@@ -70,7 +69,7 @@ std::tuple<int, uint64_t*> BufferPool::addPage(int sstNum, int pageOffset, uint6
     }
 
     numPages++;
-    return std::make_tuple(0, evictedBuffer);
+    return evictedBuffer;
 }
 
 // Returns the page buffer of the evicted page

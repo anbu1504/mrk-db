@@ -24,7 +24,7 @@ class BloomFilter {
 
     uint64_t getTotalBits();
     void addKey(uint64_t key);
-    void initFromBuf(unsigned long long pageBuf[ULLONGS_PER_PAGE]);
+    void initFromBuf(unsigned long long* pageBuf);
     bool checkKey(uint64_t key);
     std::vector<unsigned long long> flattenBloomFilter();
     void printish();

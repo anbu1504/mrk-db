@@ -34,7 +34,7 @@ void BloomFilter::addKey(uint64_t key) {
     }
 }
 
-void BloomFilter::initFromBuf(unsigned long long pageBuf[ULLONGS_PER_PAGE]) {
+void BloomFilter::initFromBuf(unsigned long long* pageBuf) {
     size_t numRead = 0;
     // stop when either num_bitsets_initialized >= filter.size() or we've read >= ULLONGS_PER_PAGE
     while (num_bitsets_initialized < filter.size() && numRead < ULLONGS_PER_PAGE) {
