@@ -201,9 +201,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
     int candidatePageNum;  // The page in which we want to look for keysToFind
 
-    // Binary search variables
-    int lo = 1 + filterPageCount + internalNodeCount;
-    int hi = filterPageCount + internalNodeCount + numPages;
     int mid;
 
     uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)];
@@ -226,47 +223,31 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
         itemsRead = bytesRead / sizeof(uint64_t);
 
     } else {
-        // Binary search to find the correct page
-        while (lo <= hi) {
-            mid = lo + (hi - lo) / 2;
-            bytesRead = comboRead(sstNum, PAGE_SIZE * mid, pageBuf, PAGE_SIZE);
-            // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * mid); // assert(bytesRead > 0)
+        // Binary search variables
+        int lo = 1 + filterPageCount + internalNodeCount;
+        int hi = filterPageCount + internalNodeCount + numPages;
+
+        candidatePageNum = binSearch(lo, hi, [&](int m) {
+            bytesRead = comboRead(sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
             itemsRead = bytesRead / sizeof(uint64_t);
 
-            if (currKey < pageBuf[0]) {
-                hi = mid - 1;
-            } else if (currKey > pageBuf[itemsRead - 2]) {
-                lo = mid + 1;
-            } else {
-                candidatePageNum = mid;
-                break;  // We found the page that would contain the first key
-            }
-        }
+            return (currKey < pageBuf[0]) ? -1 : (currKey > pageBuf[itemsRead - 2]) ? 1 : 0;
+        });
+
+        // At this point, pageBuf should contain the correct page,
+        // corresponding to candidatePageNum
     }
 
     int keysRead = itemsRead / 2;
 
-    lo = 0;
-    hi = keysRead - 1;
-    uint64_t midKey;
-
-    // Binary search to find the correct key within pageBuf
-    while (lo <= hi) {
-        mid = lo + (hi - lo) / 2;
-
-        midKey = pageBuf[mid * 2];
-
-        if (currKey < midKey) {
-            hi = mid - 1;
-        } else if (currKey > midKey) {
-            lo = mid + 1;
-        } else {
-            break;
-        }
-    }
+    mid = binSearch(0, keysRead - 1, [&](int m) {
+        return (currKey < pageBuf[m * 2]) ? -1 : (currKey > pageBuf[m * 2]) ? 1 : 0;
+    });
 
     // At this point, mid is either equal to the index of currKey itself,
     // or the next smallest key after currKey (if currKey wasn't found)
+
+    uint64_t midKey;
 
     while (!keysToFind.empty()) {
         currKey = keysToFind.back();
@@ -303,10 +284,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 }
 
 uint64_t DB::getNextBTreeNode(uint64_t currKey, uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)]) {
-    int lo;
-    int hi;
-    int mid;
-
     uint64_t numKeysInNode = pageBuf[0];
     uint64_t startOfChildren = 1 + numKeysInNode;
 
@@ -335,22 +312,15 @@ uint64_t DB::getNextBTreeNode(uint64_t currKey, uint64_t pageBuf[PAGE_SIZE / siz
         return pageBuf[startOfChildren];
     }
 
-    lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
-    hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
+    int lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
+    int hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
 
-    while (lo <= hi) {
-        mid = lo + (hi - lo) / 2;
+    // Note, pageBuf[1 + mid] is the key we're currently inspecting
+    // (+1 for offset), while pageBuf[mid] is the key before it
+    int mid = binSearch(lo, hi, [&](int m) {
+        return (currKey <= pageBuf[m]) ? -1 : (currKey > pageBuf[1 + m]) ? 1 : 0;
+    });  // Else case: pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
 
-        // Note, pageBuf[1 + mid] is the key we're currently inspecting
-        // (+1 for offset), while pageBuf[mid] is the key before it
-        if (currKey <= pageBuf[mid]) {
-            hi = mid - 1;
-        } else if (currKey > pageBuf[1 + mid]) {
-            lo = mid + 1;
-        } else {  // pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
-            break;
-        }
-    }
     return pageBuf[startOfChildren + mid];
 }
 
@@ -406,4 +376,24 @@ ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t n
         memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
         return numBytesToRead;
     }
+}
+
+int DB::binSearch(int lo, int hi, const std::function<int(int)>& comparator) {
+    int mid;
+
+    while (lo <= hi) {
+        mid = lo + (hi - lo) / 2;
+
+        int direction = comparator(mid);
+
+        if (direction < 0) {
+            hi = mid - 1;
+        } else if (direction > 0) {
+            lo = mid + 1;
+        } else {
+            break;
+        }
+    }
+
+    return mid;
 }

@@ -44,6 +44,7 @@ class DB {
     void mergeSort(std::vector<kvPairs>* vectors);
     ssize_t comboRead(int sstNumber, int pageOffset, uint64_t* buffer,
                       ssize_t numBytesToRead);  // return number of bytes of read
+    int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
 
    public:
     /**
