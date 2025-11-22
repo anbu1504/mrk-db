@@ -71,9 +71,3 @@ std::vector<unsigned long long> BloomFilter::flattenBloomFilter() {
 }
 
 uint64_t BloomFilter::getTotalBits() { return total_bits; }
-
-void BloomFilter::printish() {
-    for (int i = 0; i < 5; i++) {
-        PRINT(filter[i].to_ullong());
-    }
-}
