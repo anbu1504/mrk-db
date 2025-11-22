@@ -71,3 +71,5 @@ std::vector<unsigned long long> BloomFilter::flattenBloomFilter() {
 }
 
 uint64_t BloomFilter::getTotalBits() { return total_bits; }
+
+uint64_t BloomFilter::getNumPages() { return CEIL_DIV(total_bits, PAGE_SIZE * 8); }

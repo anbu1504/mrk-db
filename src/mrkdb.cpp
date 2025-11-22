@@ -161,23 +161,20 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     std::vector<uint64_t> keysToFind;
 
     auto [entryCount, internalNodeCount, filterBitCount, minKey, maxKey] = sstMetadataCache[sstNum];
-    uint64_t filterUllongCount = CEIL_DIV(filterBitCount, sizeof(unsigned long long) * 8);
-    uint64_t filterPageCount = CEIL_DIV(filterUllongCount * sizeof(unsigned long long), PAGE_SIZE);
 
     BloomFilter filter(filterBitCount);
-    unsigned long long filterBuf[PAGE_SIZE / sizeof(unsigned long long)];
+    uint64_t filterPageCount = filter.getNumPages();
 
-    // Starts at 1 to account for root node
+    unsigned long long filterBuf[PAGE_SIZE / sizeof(unsigned long long)];
+    // Initialize the bloom filter (starts at 1 to account for metadata page)
     for (size_t pageNum = 1; pageNum <= filterPageCount; pageNum++) {
         comboRead(sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
         filter.initFromBuf(filterBuf);
     }
 
-    // Filter out keys that are outside the range of this SST
+    // Filter out keys that are either outside the range of this SST, or not in the bloom filter
     for (size_t i = 0; i < keys.size(); i++) {
-        if (keys[i] < minKey || keys[i] > maxKey) {
-            keysNotFound.push_back(keys[i]);
-        } else if (!filter.checkKey(keys[i])) {
+        if (keys[i] < minKey || keys[i] > maxKey || !filter.checkKey(keys[i])) {
             keysNotFound.push_back(keys[i]);
         } else {
             keysToFind.push_back(keys[i]);
@@ -195,17 +192,12 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     uint64_t currKey = keysToFind.back();
     // int fd = open(SST_PATH(sstNum).c_str(), O_RDONLY); // | O_DIRECT);
 
-    // Division to obtain number of pages, rounded UP to nearest whole num
-    // We multiply entryCount by 2 because there's a Key and Value for each "entry"
-    int numPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
-
-    int candidatePageNum;  // The page in which we want to look for keysToFind
-
-    int mid;
-
+    // Variables for page reads
     uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)];
     ssize_t bytesRead;
     int itemsRead;
+
+    int candidatePageNum;  // The page in which we want to look for currKey
 
     if (USE_BTREE_SEARCH) {
         // B-Tree search to find the correct page
@@ -223,9 +215,13 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
         itemsRead = bytesRead / sizeof(uint64_t);
 
     } else {
+        // Division to obtain number of pages, rounded UP to nearest whole num
+        // We multiply entryCount by 2 because there's a Key and Value for each "entry"
+        int numLeafPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
+
         // Binary search variables
         int lo = 1 + filterPageCount + internalNodeCount;
-        int hi = filterPageCount + internalNodeCount + numPages;
+        int hi = filterPageCount + internalNodeCount + numLeafPages;
 
         candidatePageNum = binSearch(lo, hi, [&](int m) {
             bytesRead = comboRead(sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
@@ -233,14 +229,13 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
             return (currKey < pageBuf[0]) ? -1 : (currKey > pageBuf[itemsRead - 2]) ? 1 : 0;
         });
-
-        // At this point, pageBuf should contain the correct page,
-        // corresponding to candidatePageNum
     }
+
+    // At this point, pageBuf should contain the correct page, corresponding to candidatePageNum
 
     int keysRead = itemsRead / 2;
 
-    mid = binSearch(0, keysRead - 1, [&](int m) {
+    int mid = binSearch(0, keysRead - 1, [&](int m) {
         return (currKey < pageBuf[m * 2]) ? -1 : (currKey > pageBuf[m * 2]) ? 1 : 0;
     });
 

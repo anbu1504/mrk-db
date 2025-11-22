@@ -23,6 +23,7 @@ class BloomFilter {
     ~BloomFilter();
 
     uint64_t getTotalBits();
+    uint64_t getNumPages(); // Number of pages the bloom filter would take up if written to disk
     void addKey(uint64_t key);
     void initFromBuf(unsigned long long* pageBuf);
     bool checkKey(uint64_t key);
