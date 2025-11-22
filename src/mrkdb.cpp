@@ -213,60 +213,12 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     if (USE_BTREE_SEARCH) {
         // B-Tree search to find the correct page
         uint64_t currPage = 1 + filterPageCount;  // page corresponding to root node
-        uint64_t numKeysInNode;
-        uint64_t startOfChildren;
 
         // Keep going until we reach a leaf node (leaf nodes start at page #(1 + filterPageCount + internalNodeCount))
         while (currPage < 1 + filterPageCount + internalNodeCount) {
             comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
-            numKeysInNode = pageBuf[0];
-            startOfChildren = 1 + numKeysInNode;
-
-            // If the key we're looking for is larger than the last delimiting
-            // key, then we can just immediately go down to the rightmost child
-            if (currKey > pageBuf[numKeysInNode]) {
-                currPage = pageBuf[startOfChildren + numKeysInNode];
-                continue;
-            }
-
-            // LINEAR SEARCH
-
-            // // Otherwise, we know that currKey must be less than (or equal to)
-            // // one of the delimiting keys in this node, which we must find
-            // for (uint64_t delimKeyIdx = 0; delimKeyIdx < numKeysInNode; delimKeyIdx++) {
-            //     if (currKey <= pageBuf[1 + delimKeyIdx]) {
-            //         currPage = pageBuf[startOfChildren + delimKeyIdx];
-            //         break;
-            //     }
-            // }
-
-            // BINARY SEARCH
-
-            // If the key we're looking for is smaller than/equall to the first delimiting
-            // key, then we can just immediately go down to the leftmost child
-            if (currKey <= pageBuf[1]) {
-                currPage = pageBuf[startOfChildren];
-                continue;
-            }
-
-            lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
-            hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
-
-            while (lo <= hi) {
-                mid = lo + (hi - lo) / 2;
-
-                // Note, pageBuf[1 + mid] is the key we're currently inspecting
-                // (+1 for offset), while pageBuf[mid] is the key before it
-                if (currKey <= pageBuf[mid]) {
-                    hi = mid - 1;
-                } else if (currKey > pageBuf[1 + mid]) {
-                    lo = mid + 1;
-                } else {  // pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
-                    currPage = pageBuf[startOfChildren + mid];
-                    break;
-                }
-            }
+            currPage = getNextBTreeNode(currKey, pageBuf);
         }
         candidatePageNum = currPage;
         bytesRead = comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
@@ -348,6 +300,58 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
     }
 
     return std::make_tuple(foundPairs, keysNotFound);
+}
+
+uint64_t DB::getNextBTreeNode(uint64_t currKey, uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)]) {
+    int lo;
+    int hi;
+    int mid;
+
+    uint64_t numKeysInNode = pageBuf[0];
+    uint64_t startOfChildren = 1 + numKeysInNode;
+
+    // If the key we're looking for is larger than the last delimiting
+    // key, then we can just immediately go down to the rightmost child
+    if (currKey > pageBuf[numKeysInNode]) {
+        return pageBuf[startOfChildren + numKeysInNode];
+    }
+
+    // LINEAR SEARCH
+
+    // // Otherwise, we know that currKey must be less than (or equal to)
+    // // one of the delimiting keys in this node, which we must find
+    // for (uint64_t delimKeyIdx = 0; delimKeyIdx < numKeysInNode; delimKeyIdx++) {
+    //     if (currKey <= pageBuf[1 + delimKeyIdx]) {
+    //         currPage = pageBuf[startOfChildren + delimKeyIdx];
+    //         break;
+    //     }
+    // }
+
+    // BINARY SEARCH
+
+    // If the key we're looking for is smaller than/equall to the first delimiting
+    // key, then we can just immediately go down to the leftmost child
+    if (currKey <= pageBuf[1]) {
+        return pageBuf[startOfChildren];
+    }
+
+    lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
+    hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
+
+    while (lo <= hi) {
+        mid = lo + (hi - lo) / 2;
+
+        // Note, pageBuf[1 + mid] is the key we're currently inspecting
+        // (+1 for offset), while pageBuf[mid] is the key before it
+        if (currKey <= pageBuf[mid]) {
+            hi = mid - 1;
+        } else if (currKey > pageBuf[1 + mid]) {
+            lo = mid + 1;
+        } else {  // pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
+            break;
+        }
+    }
+    return pageBuf[startOfChildren + mid];
 }
 
 // In-place merge-sort for a vector of kvPairs (i.e., vector of vectors)

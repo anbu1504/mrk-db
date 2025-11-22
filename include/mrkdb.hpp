@@ -40,6 +40,7 @@ class DB {
 
     // Private helper functions
     std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
+    uint64_t getNextBTreeNode(uint64_t currKey, uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)]);
     void mergeSort(std::vector<kvPairs>* vectors);
     ssize_t comboRead(int sstNumber, int pageOffset, uint64_t* buffer,
                       ssize_t numBytesToRead);  // return number of bytes of read
