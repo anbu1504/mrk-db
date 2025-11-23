@@ -260,8 +260,8 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
     std::vector<uint64_t> memtable_data = inorderTraversalDel();
     // Construct the bloom filter, and flatten it for writing to disk
     BloomFilter filter = constructBloomFilter(&memtable_data);
-    std::vector<unsigned long long> filter_data = filter.flattenBloomFilter();
-    size_t filter_bytes = filter_data.size() * sizeof(unsigned long long);
+    std::vector<uint64_t> filter_data = filter.flattenBloomFilter();
+    size_t filter_bytes = filter_data.size() * sizeof(uint64_t);
     // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
     std::vector<BTNode> internal_nodes = constructInternalNodes(&memtable_data, CEIL_DIV(filter_bytes, PAGE_SIZE));
     std::vector<uint64_t> internal_data = flattenInternalNodes(&internal_nodes);
@@ -302,8 +302,8 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
     // Each B-Tree internal node will be structured as follows:
     // [uint_64t: # keys in node]|[contiguous uint_64ts: keys/delimiters]|[contiguous uint_64ts: children]
 
-    written = write(fd, filter_data.data(), filter_data.size() * sizeof(unsigned long long));
-    checkWrite(written, fd, filter_data.size() * sizeof(unsigned long long));
+    written = write(fd, filter_data.data(), filter_data.size() * sizeof(uint64_t));
+    checkWrite(written, fd, filter_data.size() * sizeof(uint64_t));
 
     if (filter_bytes % 4096) {  // If we don't nicely fill out a page, pad it with 0s
         size_t filter_padding = 4096 - (filter_bytes % 4096);
@@ -340,7 +340,7 @@ BloomFilter Memtable::constructBloomFilter(std::vector<uint64_t>* memtable_data)
 
 std::vector<BTNode> Memtable::constructInternalNodes(std::vector<uint64_t>* memtable_data, uint64_t num_filter_pages) {
     uint64_t num_internal_nodes = 1;  // Starts at 1 to account for the root node
-    uint64_t num_leaf_nodes = memtable_data->size() / ENTRIES_PER_PAGE;
+    uint64_t num_leaf_nodes = CEIL_DIV(memtable_data->size(), ENTRIES_PER_PAGE);
 
     std::vector<uint64_t> layer_sizes = {
         CEIL_DIV(num_leaf_nodes, BRANCH_FACTOR),

@@ -162,13 +162,13 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
     auto [entryCount, internalNodeCount, filterBitCount, minKey, maxKey] = sstMetadataCache[sstNum];
 
-    BloomFilter filter(filterBitCount);
+    BloomFilter filter(filterBitCount, 0);
     uint64_t filterPageCount = filter.getNumPages();
 
-    unsigned long long filterBuf[PAGE_SIZE / sizeof(unsigned long long)];
+    uint64_t filterBuf[PAGE_SIZE / sizeof(uint64_t)];
     // Initialize the bloom filter (starts at 1 to account for metadata page)
     for (size_t pageNum = 1; pageNum <= filterPageCount; pageNum++) {
-        comboRead(sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
+        bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
         filter.initFromBuf(filterBuf);
     }
 
@@ -205,12 +205,12 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
 
         // Keep going until we reach a leaf node (leaf nodes start at page #(1 + filterPageCount + internalNodeCount))
         while (currPage < 1 + filterPageCount + internalNodeCount) {
-            comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
+            bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
             currPage = getNextBTreeNode(currKey, pageBuf);
         }
         candidatePageNum = currPage;
-        bytesRead = comboRead(sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
+        bytesRead = bufferPool->comboRead(SST_PATH(sstNum),sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
         // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
         itemsRead = bytesRead / sizeof(uint64_t);
 
@@ -224,7 +224,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
         int hi = filterPageCount + internalNodeCount + numLeafPages;
 
         candidatePageNum = binSearch(lo, hi, [&](int m) {
-            bytesRead = comboRead(sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
+            bytesRead = bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
             itemsRead = bytesRead / sizeof(uint64_t);
 
             return (currKey < pageBuf[0]) ? -1 : (currKey > pageBuf[itemsRead - 2]) ? 1 : 0;
@@ -254,7 +254,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> DB::sstSearch(std::vector<uint64_t> k
             // If mid is out of bounds, read next page and set mid to 0
             if (mid >= keysRead) {
                 candidatePageNum++;
-                bytesRead = comboRead(sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
+                bytesRead = bufferPool->comboRead(SST_PATH(sstNum),sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
                 // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * candidatePageNum);
                 itemsRead = bytesRead / sizeof(uint64_t);
                 keysRead = itemsRead / 2;
@@ -341,42 +341,6 @@ void DB::mergeSort(std::vector<kvPairs>* vectors) {
         }
 
         std::swap(*vectors, merged);
-    }
-}
-
-ssize_t DB::comboRead(int sstNumber, int pageOffset, uint64_t* buffer, ssize_t numBytesToRead) {
-    // try to read that page from the buffer pool
-    // if unsuccessful, read from the disk
-    // o/w copy over to buffer from result of buffer pool read
-    // after you read, if you read from the disk, you should also enter that into the buffer pool
-
-    std::optional<std::tuple<int, uint64_t*>> bufferPoolRead = bufferPool->searchPage(sstNumber, pageOffset);
-    ssize_t bytesRead;
-
-    if (!bufferPoolRead.has_value()) {
-        int fd = open(SST_PATH(sstNumber).c_str(), O_RDONLY);
-        if (fd == -1) {
-            close(fd);
-            throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
-        }
-        bytesRead = pread(fd, buffer, numBytesToRead, pageOffset);
-        uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
-
-        memcpy(bufferHeap, buffer, bytesRead);
-
-        uint64_t* evictBufferExists = bufferPool->addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
-
-        if (evictBufferExists) {
-            std::free(evictBufferExists);
-        }
-        close(fd);
-        return bytesRead;
-    }
-
-    else {
-        uint64_t* bufferFromBP = std::get<1>(bufferPoolRead.value());
-        memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
-        return numBytesToRead;
     }
 }
 

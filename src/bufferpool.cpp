@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "../external/xxhash64.h"
+#define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
 
 /**
  * @brief Constructor for the BufferPool class
@@ -16,7 +17,7 @@ BufferPool::BufferPool(size_t initialAmount, size_t maximalAmount, size_t maxPag
       numPages(0),
       hashMap(new HashMap(initialAmount, maximalAmount)),
       clockHandle(0) {
-    clockVector.reserve(maxPagesAmount);
+    clockVector.resize(maxPagesAmount);
 };
 
 /**
@@ -98,6 +99,42 @@ uint64_t* BufferPool::evict() {
     }
 
     return evictedBuffer;
+}
+
+ssize_t BufferPool::comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer, ssize_t numBytesToRead) {
+    // try to read that page from the buffer pool
+    // if unsuccessful, read from the disk
+    // o/w copy over to buffer from result of buffer pool read
+    // after you read, if you read from the disk, you should also enter that into the buffer pool
+
+    std::optional<std::tuple<int, uint64_t*>> bufferPoolRead = searchPage(sstNumber, pageOffset);
+    ssize_t bytesRead;
+
+    if (!bufferPoolRead.has_value()) {
+        int fd = open(filepath.c_str(), O_RDONLY);
+        if (fd == -1) {
+            close(fd);
+            throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
+        }
+        bytesRead = pread(fd, buffer, numBytesToRead, pageOffset);
+        uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(bytesRead));
+
+        memcpy(bufferHeap, buffer, bytesRead);
+
+        uint64_t* evictBufferExists = addPage(sstNumber, pageOffset, bufferHeap, static_cast<size_t>(bytesRead));
+
+        if (evictBufferExists) {
+            std::free(evictBufferExists);
+        }
+        close(fd);
+        return bytesRead;
+    }
+
+    else {
+        uint64_t* bufferFromBP = std::get<1>(bufferPoolRead.value());
+        memcpy(buffer, bufferFromBP, static_cast<size_t>(numBytesToRead));
+        return numBytesToRead;
+    }
 }
 
 /**

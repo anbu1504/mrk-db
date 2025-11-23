@@ -15,8 +15,8 @@ BloomFilter::BloomFilter(size_t num_keys)
 /**
  * @brief Constructor #2 for the BloomFilter class
  */
-BloomFilter::BloomFilter(uint64_t total_bits)
-    : total_bits(total_bits), filter(CEIL_DIV(total_bits, BITSET_SIZE)), num_bitsets_initialized(0) {}
+BloomFilter::BloomFilter(uint64_t total_bits, int x)
+    : total_bits(total_bits), filter(CEIL_DIV(total_bits, BITSET_SIZE), x), num_bitsets_initialized(0) {}
 
 /**
  * @brief Destructor for the BloomFilter class
@@ -34,7 +34,7 @@ void BloomFilter::addKey(uint64_t key) {
     }
 }
 
-void BloomFilter::initFromBuf(unsigned long long* pageBuf) {
+void BloomFilter::initFromBuf(uint64_t* pageBuf) {
     size_t numRead = 0;
     // stop when either num_bitsets_initialized >= filter.size() or we've read >= ULLONGS_PER_PAGE
     while (num_bitsets_initialized < filter.size() && numRead < ULLONGS_PER_PAGE) {
@@ -60,11 +60,11 @@ bool BloomFilter::checkKey(uint64_t key) {
     return true;
 }
 
-std::vector<unsigned long long> BloomFilter::flattenBloomFilter() {
-    std::vector<unsigned long long> output;
+std::vector<uint64_t> BloomFilter::flattenBloomFilter() {
+    std::vector<uint64_t> output;
 
     for (size_t bitset_num = 0; bitset_num < filter.size(); bitset_num++) {
-        output.push_back(filter[bitset_num].to_ullong());
+        output.push_back(static_cast<uint64_t>(filter[bitset_num].to_ullong()));
     }
 
     return output;

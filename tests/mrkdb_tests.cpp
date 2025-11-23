@@ -385,7 +385,6 @@ class DBTester {
     }
 
     void testDBScanAcrossSSTs() {
-        std::cout << "DB::ScanAcrossSSTs() entered!" << std::endl;
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
@@ -395,23 +394,18 @@ class DBTester {
         db.Open(testDB);
 
         uint64_t j = 0;
-        std::cout << "DB::ScanAcrossSSTs() for loop!" << std::endl;
         for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
             db.Put(i, j);
             j++;
         }
-        std::cout << "DB::ScanAcrossSSTs() after for loop!" << std::endl;
 
         uint64_t key1 = 0;
         uint64_t key2 = 3 * THRESHOLD;
 
-        std::cout << "DB::ScanAcrossSSTs() scan!" << std::endl;
         kvPairs res1 = db.Scan(key1, key2);
-        std::cout << "DB::ScanAcrossSSTs() after scan!" << std::endl;
 
         assert(res1.size() == (3 * THRESHOLD) + 1);  // size should be 49513
 
-        std::cout << "DB::ScanAcrossSSTs() second for loop!" << std::endl;
         for (size_t i = 0; i < res1.size(); ++i) {
             const auto& t = res1[i];
             uint64_t k = std::get<0>(t);
@@ -421,7 +415,6 @@ class DBTester {
             // for all returned things in our scan query
             assert(k == v);
         }
-        std::cout << "DB::ScanAcrossSSTs() outside second for loop!" << std::endl;
 
         std::cout << "DB::ScanAcrossSSTs() for ssts passed!" << std::endl;
 
@@ -472,7 +465,6 @@ int main() {
     tester.testDBGetEmptyMemtable();
     tester.testDBGetEmptySST();
     tester.testDBGetEmptySSTDeeper();
-    tester.testDBPut();
     tester.testDBPut();
     tester.testDBClose();
     tester.testDBScanMemtable();

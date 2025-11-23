@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <functional>
 
 #include "bufferpool.hpp"
 #include "constants.hpp"
@@ -42,8 +43,6 @@ class DB {
     std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
     uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf);
     void mergeSort(std::vector<kvPairs>* vectors);
-    ssize_t comboRead(int sstNumber, int pageOffset, uint64_t* buffer,
-                      ssize_t numBytesToRead);  // return number of bytes of read
     int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
 
    public:
