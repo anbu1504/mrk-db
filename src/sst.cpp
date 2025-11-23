@@ -376,6 +376,7 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     // Construct the bloom filter, and flatten it for writing to disk
     BloomFilter filter = constructBloomFilter(memtable_data);
     std::vector<uint64_t> filter_data = filter.flattenBloomFilter();
+    uint64_t filter_bits = filter.getTotalBits();
     size_t filter_bytes = filter_data.size() * sizeof(uint64_t);
     // Construct the internal nodes of the B-Tree, and flatten them for writing to disk
     std::vector<BTNode> internal_nodes = constructInternalNodes(memtable_data, CEIL_DIV(filter_bytes, PAGE_SIZE));
@@ -395,13 +396,16 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     written = write(fd, &num_internal_nodes, sizeof(size_t));
     checkWrite(written, fd, sizeof(size_t));
 
+    written = write(fd, &filter_bits, sizeof(uint64_t));
+    checkWrite(written, fd, sizeof(uint64_t));
+
     written = write(fd, &min, sizeof(uint64_t));
     checkWrite(written, fd, sizeof(uint64_t));
 
     written = write(fd, &max, sizeof(uint64_t));
     checkWrite(written, fd, sizeof(uint64_t));
 
-    size_t header_bytes = sizeof(size_t) + 3 * sizeof(uint64_t);
+    size_t header_bytes = 2 * sizeof(size_t) + 3 * sizeof(uint64_t);
     size_t padding = 4096 - header_bytes;
     std::vector<char> zero_buf(padding, 0);
     written = write(fd, zero_buf.data(), padding);
