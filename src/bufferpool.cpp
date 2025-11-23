@@ -101,7 +101,8 @@ uint64_t* BufferPool::evict() {
     return evictedBuffer;
 }
 
-ssize_t BufferPool::comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer, ssize_t numBytesToRead) {
+ssize_t BufferPool::comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer,
+                              ssize_t numBytesToRead) {
     // try to read that page from the buffer pool
     // if unsuccessful, read from the disk
     // o/w copy over to buffer from result of buffer pool read

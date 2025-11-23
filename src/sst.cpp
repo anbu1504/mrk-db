@@ -1,6 +1,7 @@
+#include "../include/sst.hpp"
+
 #include <functional>
 
-#include "../include/sst.hpp"
 #include "../include/bloomfilter.hpp"
 #include "../include/bufferpool.hpp"
 
@@ -365,7 +366,6 @@ void checkWrite(ssize_t written, int fd, ssize_t desiredWriteAmount) {
 }
 
 sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data, size_t flushed_size) {
-
     // ========== Metadata Stuff Begins ==========
 
     // Metadata values
@@ -420,7 +420,7 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     written = write(fd, filter_data.data(), filter_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, filter_data.size() * sizeof(uint64_t));
 
-    if (filter_bytes % 4096) { // If we don't nicely fill out a page, pad it with 0s
+    if (filter_bytes % 4096) {  // If we don't nicely fill out a page, pad it with 0s
         size_t filter_padding = 4096 - (filter_bytes % 4096);
         std::vector<char> filter_zero_buf(filter_padding, 0);
         written = write(fd, filter_zero_buf.data(), filter_padding);
@@ -437,4 +437,4 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     return std::make_tuple(flushed_size, num_internal_nodes, filter.getTotalBits(), min, max);
 }
 
-}
+}  // namespace SST

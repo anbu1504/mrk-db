@@ -1,5 +1,4 @@
 #include "../include/memtable.hpp"
-#include "../include/sst.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -10,6 +9,8 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+
+#include "../include/sst.hpp"
 
 /**
  * @brief Constructor to initialize the memtable with a size threshold.

@@ -7,12 +7,12 @@
 #include <optional>
 #include <string>
 // #include <tuple>
-#include <vector>
 #include <fcntl.h>  // Also needed for O_DIRECT(?)
 #include <unistd.h>
-#include <functional>
-#include <cstring>
 
+#include <cstring>
+#include <functional>
+#include <vector>
 
 #define BUCKET_OVERFLOW_THRESHOLD 4
 
@@ -72,7 +72,8 @@ class BufferPool {
     size_t numPages;  // Maximum number of pages in buffer pool
     std::optional<std::tuple<int, uint64_t*>> searchPage(int sstNum, int pageOffset);
     uint64_t* addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize);
-    ssize_t comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer, ssize_t numBytesToRead);  // return number of bytes of read
+    ssize_t comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer,
+                      ssize_t numBytesToRead);  // return number of bytes of read
 
    private:
     HashMap* hashMap;

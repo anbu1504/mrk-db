@@ -70,8 +70,8 @@ std::optional<uint64_t> DB::Get(uint64_t key) {
     kvPairs sstValues;
 
     for (int sstNum = sstCount - 1; sstNum >= 0; sstNum--) {
-        sstValues =
-            std::get<0>(SST::sstSearch({key}, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName));
+        sstValues = std::get<0>(
+            SST::sstSearch({key}, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName));
         if (!sstValues.empty()) {
             // Return value (index 1) from first KV-pair (index 0)
             return std::get<1>(sstValues[0]);
@@ -106,7 +106,8 @@ kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
     std::tuple<kvPairs, std::vector<uint64_t>> binSearchRet;
 
     for (int sstNum = sstCount - 1; sstNum >= 0 && !keysToFind.empty(); sstNum--) {
-        binSearchRet = SST::sstSearch(keysToFind, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName);
+        binSearchRet =
+            SST::sstSearch(keysToFind, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName);
 
         allPairVectors.push_back(std::get<0>(binSearchRet));
         keysToFind = std::get<1>(binSearchRet);

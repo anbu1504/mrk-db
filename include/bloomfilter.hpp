@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bitset>
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "constants.hpp"
 
@@ -24,7 +24,7 @@ class BloomFilter {
     ~BloomFilter();
 
     uint64_t getTotalBits();
-    uint64_t getNumPages(); // Number of pages the bloom filter would take up if written to disk
+    uint64_t getNumPages();  // Number of pages the bloom filter would take up if written to disk
     void addKey(uint64_t key);
     void initFromBuf(uint64_t* pageBuf);
     bool checkKey(uint64_t key);
