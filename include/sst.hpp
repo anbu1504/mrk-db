@@ -9,8 +9,5 @@ namespace SST {
                                                      bool useBTreeSearch, BufferPool* bufferPool,
                                                      std::string databaseName);
 
-    // // Private helper functions
-    // uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf);
-    // void mergeSort(std::vector<kvPairs>* vectors);
-    // int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
+    sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data, size_t flushed_size);
 }
