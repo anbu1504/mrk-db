@@ -14,8 +14,6 @@
 #define THRESHOLD 16384
 #define USE_BTREE_SEARCH true
 
-typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
-
 /**
  * @class DB
  * @brief The MRK-DB database class.
@@ -37,13 +35,13 @@ class DB {
     BufferPool* bufferPool;
 
     // For each SST, records a tuple of <numEntries, numInternalNodes, numFilterBits, minKey, maxKey>
-    std::vector<std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t>> sstMetadataCache;
+    std::vector<sstMetadata> sstMetadataCache;
 
-    // Private helper functions
-    std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
-    uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf);
+    // // Private helper functions
+    // std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
+    // uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf);
     void mergeSort(std::vector<kvPairs>* vectors);
-    int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
+    // int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
 
    public:
     /**
