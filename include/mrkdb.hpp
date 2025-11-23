@@ -11,6 +11,8 @@
 #include "constants.hpp"
 #include "memtable.hpp"
 
+static_assert(sizeof(unsigned long long) == 8, "Expect 64-bit unsigned type");
+
 #define THRESHOLD 16384
 #define USE_BTREE_SEARCH true
 

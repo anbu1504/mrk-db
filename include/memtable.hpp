@@ -66,15 +66,6 @@ class Memtable {
     void inorderTraversalDelRec(std::vector<uint64_t>* entries, Node* node);  // recursive inorder traversal
     uint64_t getMax(Node* node);                                              // helper for flush
     uint64_t getMin(Node* node);                                              // helper for flush
-    std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data,
-                                               uint64_t num_filter_pages);           // helper for flush (B-Tree)
-    std::vector<uint64_t> flattenInternalNodes(std::vector<BTNode>* internalNodes);  // helper for flush (B-Tree)
-    BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data);
-    std::vector<BTNode> constructLayer(
-        uint64_t page_offset, uint64_t layer_size, std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
-        std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data  // output for list of page-nums and max-keys
-    );
-    void checkWrite(ssize_t written, int fd, ssize_t desiredWriteAmount);
 
    public:
     Memtable(size_t threshold);  // constructor with threshold
