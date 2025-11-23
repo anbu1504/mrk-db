@@ -18,10 +18,9 @@ class LSMTree {
         ~LSMTree();
         int numLevels;
         int scaleFactor; // basically M (needs to be a constant after)
-    
+    private:
+        void multiwayMergeSort(int sstNum1, int sstNum2);
+        void constructInternalNodes();
+        void constructLayer();
     int compaction(int sstNum1, int sstNum2);
-    void multiwayMergeSort(int sstNum1, int sstNum2);
-    void constructInternalNodes();
-    void constructLayer();
-
 };
