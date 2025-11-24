@@ -248,7 +248,9 @@ std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> Memtable::flushToDiskBT
         return std::make_tuple(0, 0, 0, 0, 0);
     }
 
+    size_t flushed_size = size;
+
     std::vector<uint64_t> memtable_data = inorderTraversalDel();
 
-    return SST::sstWrite(filename, &memtable_data, size);
+    return SST::sstWrite(filename, &memtable_data, flushed_size);
 }

@@ -137,7 +137,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
     } else {
         // Division to obtain number of pages, rounded UP to nearest whole num
         // We multiply entryCount by 2 because there's a Key and Value for each "entry"
-        int numLeafPages = CEIL_DIV(entryCount * 2, PAGE_SIZE);
+        int numLeafPages = CEIL_DIV(entryCount * 2, UINT64S_PER_PAGE);
 
         // Binary search variables
         int lo = 1 + filterPageCount + internalNodeCount;
