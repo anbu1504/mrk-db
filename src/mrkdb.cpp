@@ -25,6 +25,8 @@ int DB::Open(const std::string dbName) {
     bufferPool = new BufferPool(INITIAL_DIR_SIZE, MAX_DIR_SIZE, MAX_NUM_PAGES);
     sstCount = 0;
 
+    
+
     if (!std::filesystem::create_directory(dbName)) {  // If the DB already exists
         std::ifstream metadataFile(databaseName + "/" + METADATA_FILENAME);
 
@@ -39,20 +41,20 @@ int DB::Open(const std::string dbName) {
             uint64_t filterBitCount;
             uint64_t minKey;
             uint64_t maxKey;
-            std::ifstream sstFile(SST_PATH(i));
 
-            if (sstFile.is_open()) {
-                sstFile >> entryCount;
-                sstFile >> internalNodeCount;
-                sstFile >> filterBitCount;
-                sstFile >> minKey;
-                sstFile >> maxKey;
-                sstMetadataCache.push_back(
-                    std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
-                sstFile.close();
-            } else {
-                return 1;  // Error: This SST should exist
-            }
+
+            int fd = open(SST_PATH(i).c_str(), O_RDONLY);
+
+            pread(fd, &entryCount, sizeof(entryCount), 0);
+            pread(fd, &internalNodeCount, sizeof(internalNodeCount), sizeof(size_t));
+            pread(fd, &filterBitCount, sizeof(filterBitCount), sizeof(size_t) * 2);
+            pread(fd, &minKey, sizeof(minKey), sizeof(size_t) * 2 + sizeof(uint64_t));
+            pread(fd, &maxKey, sizeof(maxKey), sizeof(size_t) * 2 + sizeof(uint64_t) * 2);
+                
+            sstMetadataCache.push_back(
+                std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
+            close(fd);
+
         }
     }
 
