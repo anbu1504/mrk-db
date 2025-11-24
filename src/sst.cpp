@@ -10,6 +10,32 @@
 
 namespace SST {
 
+int calcNumPages(size_t numKeys) {
+    size_t numItems = 2 * numKeys;
+    return static_cast<int>(CEIL_DIV(numItems, UINT64S_PER_PAGE));
+}
+// number of pages = ceil(total entries / entries in a page)
+// if not last page, return entries in a page (entries in a page is actually keys in a page so we have to x2)
+// if last page is not full, then return total entries % entries in a page
+// if last page is full (i.e. modulo returns 0), then return entries in a page
+
+int calcNumItemsInPage(size_t numKeys, int pageNum) {
+    int currPageNum = pageNum - 1;
+    size_t numItems = 2 * numKeys;
+    int numPages = calcNumPages(numItems);
+
+    if (currPageNum == numPages - 1) {
+        int itemsLastPage = numItems % UINT64S_PER_PAGE;
+        if (!itemsLastPage) { // 0
+            return UINT64S_PER_PAGE;
+        }
+        else {
+            return itemsLastPage;
+        }
+    }
+    return UINT64S_PER_PAGE;
+}
+
 int binSearch(int lo, int hi, const std::function<int(int)>& comparator) {
     int mid;
 
@@ -71,6 +97,8 @@ uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf) {
     return pageBuf[startOfChildren + mid];
 }
 
+
+
 // B-Tree/Binary (depending on USE_BTREE_SEARCH) search in the SST corresponding to sstNum, to find the provided keys
 // Returns a tuple of: (1) Vector of KV pairs that were found in the SST, and (2) Keys that weren't found in the SST
 std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum, sstMetadata metadata,
@@ -84,10 +112,16 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
 
     BloomFilter filter(filterBitCount, 0);
     uint64_t filterPageCount = filter.getNumPages();
+    uint64_t leafPageCount = calcNumPages(entryCount);    
+
+    // number of pages = ceil(total entries / entries in a page)
+    // if not last page, return entries in a page (entries in a page is actually keys in a page so we have to x2)
+    // if last page is not full, then return total entries % entries in a page
+    // if last page is full (i.e. modulo returns 0), then return entries in a page
 
     uint64_t filterBuf[PAGE_SIZE / sizeof(uint64_t)];
     // Initialize the bloom filter (starts at 1 to account for metadata page)
-    for (size_t pageNum = 1; pageNum <= filterPageCount; pageNum++) {
+    for (size_t pageNum = 1 + leafPageCount; pageNum < 1 + leafPageCount + filterPageCount; pageNum++) {
         bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
         filter.initFromBuf(filterBuf);
     }
@@ -100,7 +134,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
             keysToFind.push_back(keys[i]);
         }
     }
-
+    
     // If we have no keys to look for in this SST, then no need to do any I/O here
     if (keysToFind.empty()) {
         return std::make_tuple(foundPairs, keysNotFound);
@@ -114,38 +148,32 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
 
     // Variables for page reads
     uint64_t pageBuf[PAGE_SIZE / sizeof(uint64_t)];
-    ssize_t bytesRead;
-    int itemsRead;
+    size_t itemsRead;
 
     int candidatePageNum;  // The page in which we want to look for currKey
-
     if (useBTreeSearch) {
         // B-Tree search to find the correct page
-        uint64_t currPage = 1 + filterPageCount;  // page corresponding to root node
+        uint64_t currPage = 1 + filterPageCount + leafPageCount;  // page corresponding to root node
 
-        // Keep going until we reach a leaf node (leaf nodes start at page #(1 + filterPageCount + internalNodeCount))
-        while (currPage < 1 + filterPageCount + internalNodeCount) {
+        // Keep going until we reach a leaf node (leaf nodes start at page #(1 + leafPageCount))
+        while (currPage >= 1 + leafPageCount) {
             bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
             // pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
             currPage = getNextBTreeNode(currKey, pageBuf);
         }
         candidatePageNum = currPage;
-        bytesRead = bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
+        bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
         // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
-        itemsRead = bytesRead / sizeof(uint64_t);
+        itemsRead = calcNumItemsInPage(entryCount, candidatePageNum);
 
     } else {
-        // Division to obtain number of pages, rounded UP to nearest whole num
-        // We multiply entryCount by 2 because there's a Key and Value for each "entry"
-        int numLeafPages = CEIL_DIV(entryCount * 2, UINT64S_PER_PAGE);
-
         // Binary search variables
-        int lo = 1 + filterPageCount + internalNodeCount;
-        int hi = filterPageCount + internalNodeCount + numLeafPages;
-
+        int lo = 1;
+        int hi = leafPageCount;
         candidatePageNum = binSearch(lo, hi, [&](int m) {
-            bytesRead = bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
-            itemsRead = bytesRead / sizeof(uint64_t);
+            bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * m, pageBuf, PAGE_SIZE);
+            // page num and total items needed for helper function
+            itemsRead = calcNumItemsInPage(entryCount, m);
 
             return (currKey < pageBuf[0]) ? -1 : (currKey > pageBuf[itemsRead - 2]) ? 1 : 0;
         });
@@ -153,7 +181,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
 
     // At this point, pageBuf should contain the correct page, corresponding to candidatePageNum
 
-    int keysRead = itemsRead / 2;
+    int keysRead = itemsRead / 2; // this itemsRead is fine
 
     int mid = binSearch(0, keysRead - 1, [&](int m) {
         return (currKey < pageBuf[m * 2]) ? -1 : (currKey > pageBuf[m * 2]) ? 1 : 0;
@@ -163,7 +191,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
     // or the next smallest key after currKey (if currKey wasn't found)
 
     uint64_t midKey;
-
     while (!keysToFind.empty()) {
         currKey = keysToFind.back();
         midKey = pageBuf[mid * 2];
@@ -174,10 +201,9 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
             // If mid is out of bounds, read next page and set mid to 0
             if (mid >= keysRead) {
                 candidatePageNum++;
-                bytesRead =
-                    bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
+                bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
                 // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * candidatePageNum);
-                itemsRead = bytesRead / sizeof(uint64_t);
+                itemsRead = calcNumItemsInPage(entryCount, candidatePageNum);
                 keysRead = itemsRead / 2;
 
                 mid = 0;
@@ -195,7 +221,6 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
 
         keysToFind.pop_back();
     }
-
     return std::make_tuple(foundPairs, keysNotFound);
 }
 
@@ -287,7 +312,7 @@ std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data,
         layer_sizes.push_back(CEIL_DIV(layer_sizes.back(), BRANCH_FACTOR));
     }
 
-    uint64_t page_offset = num_internal_nodes + num_filter_pages + 1;  // +1 to account for the metadata page
+    uint64_t page_offset = num_leaf_nodes + num_internal_nodes + num_filter_pages + 1;  // +1 to account for the metadata page
 
     // let's make a tuple to represent each leaf page, which will just
     // contain the page number (including offset) and the max key in the page
@@ -298,12 +323,12 @@ std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data,
         // then subtract 2 to obtain the index of the *end* of *this* page
         uint64_t last_idx_in_page = ENTRIES_PER_PAGE * (leaf_num + 1) - 2;
 
-        leaf_pages.push_back(std::make_tuple(page_offset + leaf_num, memtable_data->at(last_idx_in_page)));
+        leaf_pages.push_back(std::make_tuple(1 + leaf_num, memtable_data->at(last_idx_in_page)));
     }
 
     // add the very last page, and the very last key in memdata_table
     leaf_pages.push_back(
-        std::make_tuple(page_offset + num_leaf_nodes - 1, memtable_data->at(memtable_data->size() - 2)));
+        std::make_tuple(1 + num_leaf_nodes - 1, memtable_data->at(memtable_data->size() - 2)));
 
     std::vector<BTNode> finalNodeVec;  // A vector to hold our final output
 
@@ -406,7 +431,7 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     checkWrite(written, fd, sizeof(uint64_t));
 
     size_t header_bytes = 2 * sizeof(size_t) + 3 * sizeof(uint64_t);
-    size_t padding = 4096 - header_bytes;
+    size_t padding = PAGE_SIZE - header_bytes;
     std::vector<char> zero_buf(padding, 0);
     written = write(fd, zero_buf.data(), padding);
     checkWrite(written, fd, padding);
@@ -421,11 +446,22 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     // Each B-Tree internal node will be structured as follows:
     // [uint_64t: # keys in node]|[contiguous uint_64ts: keys/delimiters]|[contiguous uint_64ts: children]
 
+    written = write(fd, memtable_data->data(), memtable_data->size() * sizeof(uint64_t));
+    checkWrite(written, fd, memtable_data->size() * sizeof(uint64_t));
+    size_t memtable_data_bytes = memtable_data->size() * sizeof(uint64_t);
+    
+    if (memtable_data_bytes % PAGE_SIZE) {
+        size_t memtable_data_padding = PAGE_SIZE - (memtable_data_bytes % PAGE_SIZE);
+        std::vector<char> memtable_zero_buf(memtable_data_padding, 0);
+        written = write(fd, memtable_zero_buf.data(), memtable_data_padding);
+        checkWrite(written, fd, memtable_data_padding);
+    }
+
     written = write(fd, filter_data.data(), filter_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, filter_data.size() * sizeof(uint64_t));
 
-    if (filter_bytes % 4096) {  // If we don't nicely fill out a page, pad it with 0s
-        size_t filter_padding = 4096 - (filter_bytes % 4096);
+    if (filter_bytes % PAGE_SIZE) {  // If we don't nicely fill out a page, pad it with 0s
+        size_t filter_padding = PAGE_SIZE - (filter_bytes % PAGE_SIZE);
         std::vector<char> filter_zero_buf(filter_padding, 0);
         written = write(fd, filter_zero_buf.data(), filter_padding);
         checkWrite(written, fd, filter_padding);
@@ -434,11 +470,9 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
     written = write(fd, internal_data.data(), internal_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, internal_data.size() * sizeof(uint64_t));
 
-    written = write(fd, memtable_data->data(), memtable_data->size() * sizeof(uint64_t));
-    checkWrite(written, fd, memtable_data->size() * sizeof(uint64_t));
-
     close(fd);
     return std::make_tuple(flushed_size, num_internal_nodes, filter.getTotalBits(), min, max);
 }
 
 }  // namespace SST
+
