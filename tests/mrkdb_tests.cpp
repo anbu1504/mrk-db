@@ -97,7 +97,7 @@ class DBTester {
         db.Open(testDB);
 
         uint64_t j = 0;
-        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
             db.Put(i, j);
             j++;
         }
@@ -105,10 +105,20 @@ class DBTester {
         uint64_t val1 = db.Get(1).value();
         uint64_t val2 = db.Get(THRESHOLD + 2).value();
         uint64_t val3 = db.Get((2 * THRESHOLD) + 2).value();
+        uint64_t val4 = db.Get((3 * THRESHOLD) + 23).value();
+        uint64_t val5 = db.Get((4 * THRESHOLD) + 24).value();
+        uint64_t val6 = db.Get((5 * THRESHOLD) + 30).value();
+        uint64_t val7 = db.Get((6 * THRESHOLD) + 41).value();
+        uint64_t val8 = db.Get((7 * THRESHOLD) + 55).value();
 
         assert(val1 == 1);
         assert(val2 == THRESHOLD + 2);
         assert(val3 == (2 * THRESHOLD) + 2);
+        assert(val4 == (3 * THRESHOLD) + 23);
+        assert(val5 == (4 * THRESHOLD) + 24);
+        assert(val6 == (5 * THRESHOLD) + 30);
+        assert(val7 == (6 * THRESHOLD) + 41);
+        assert(val8 == (7 * THRESHOLD) + 55);
 
         std::cout << "DB::GetSSTDeeper() for sst test deeper passed!" << std::endl;
 
@@ -328,20 +338,73 @@ class DBTester {
         db.Open(testDB);
 
         uint64_t j = 0;
-        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
             db.Put(i, j);
             j++;
         }
 
-        uint64_t key1 = 2 * THRESHOLD + 2;
-        uint64_t key2 = 2 * THRESHOLD + 20;
+        // 16384
+        uint64_t key1 = 2 * THRESHOLD + 2; // 32770
+        uint64_t key2 = 2 * THRESHOLD + 20; // 32788
+        uint64_t key3 = 4 * THRESHOLD + 2; // 65538
+        uint64_t key4 = 6 * THRESHOLD + 20; // 98324
+        uint64_t key5 = 7 * THRESHOLD + 2; // 114690
+        uint64_t key6 = THRESHOLD + 20; // 16404
 
         kvPairs res1 = db.Scan(key1, key2);
+        kvPairs res2 = db.Scan(key1, key3);
+        kvPairs res3 = db.Scan(key1, key4);
+        kvPairs res4 = db.Scan(key1, key5);
+        kvPairs res5 = db.Scan(key6, key1);
 
         assert(res1.size() == 19);
+        assert(res2.size() == 32769);
+        assert(res3.size() == 65555);
+        assert(res4.size() == 81921);
+        assert(res5.size() == 16367);
 
         for (size_t i = 0; i < res1.size(); ++i) {
             const auto& t = res1[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+
+        for (size_t i = 0; i < res2.size(); ++i) {
+            const auto& t = res2[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+
+        for (size_t i = 0; i < res3.size(); ++i) {
+            const auto& t = res3[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+
+        for (size_t i = 0; i < res4.size(); ++i) {
+            const auto& t = res4[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+
+        for (size_t i = 0; i < res5.size(); ++i) {
+            const auto& t = res5[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
             // the notion is that the key and values are the same as per how we inserted it
@@ -439,7 +502,7 @@ class DBTester {
         std::cout << "DB::Put() test passed!" << std::endl;
     }
 
-    void testDBClose() {
+    void testDBCloseFully() {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
@@ -451,7 +514,11 @@ class DBTester {
 
         assert(returnValue == 0);
 
-        std::cout << "DB::Close() test passed!" << std::endl;
+        std::cout << "DB::CloseFully() test passed!" << std::endl;
+    }
+
+    void testDBScanGetKeysNotThere() {
+        return;
     }
 };
 
@@ -466,12 +533,13 @@ int main() {
     tester.testDBGetEmptySST();
     tester.testDBGetEmptySSTDeeper();
     tester.testDBPut();
-    tester.testDBClose();
+    tester.testDBCloseFully();
     tester.testDBScanMemtable();
     tester.testDBScanMemtableEmpty();
     tester.testDBScanSST();
     tester.testDBScanSSTDeeper();
     tester.testDBScanSSTEmpty();
     tester.testDBScanAcrossSSTs();
+    tester.testDBScanGetKeysNotThere();
     return 0;
 }
