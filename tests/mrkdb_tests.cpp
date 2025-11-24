@@ -363,7 +363,7 @@ class DBTester {
         assert(res4.size() == 81921);
         assert(res5.size() == 16367);
 
-        for (size_t i = 0; i < res1.size(); ++i) {
+        for (size_t i = 0; i < res1.size(); i++) {
             const auto& t = res1[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -373,7 +373,7 @@ class DBTester {
             assert(k == v);
         }
 
-        for (size_t i = 0; i < res2.size(); ++i) {
+        for (size_t i = 0; i < res2.size(); i++) {
             const auto& t = res2[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -383,7 +383,7 @@ class DBTester {
             assert(k == v);
         }
 
-        for (size_t i = 0; i < res3.size(); ++i) {
+        for (size_t i = 0; i < res3.size(); i++) {
             const auto& t = res3[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -393,7 +393,7 @@ class DBTester {
             assert(k == v);
         }
 
-        for (size_t i = 0; i < res4.size(); ++i) {
+        for (size_t i = 0; i < res4.size(); i++) {
             const auto& t = res4[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -403,7 +403,7 @@ class DBTester {
             assert(k == v);
         }
 
-        for (size_t i = 0; i < res5.size(); ++i) {
+        for (size_t i = 0; i < res5.size(); i++) {
             const auto& t = res5[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -428,18 +428,37 @@ class DBTester {
         DB db;
         db.Open(testDB);
 
-        uint64_t j = 0;
+        uint64_t missingNumber = 267;
         for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
-            db.Put(i, j);
-            j++;
+            if (i != missingNumber) {
+                db.Put(i, i);
+            }
         }
 
         uint64_t key1 = 4 * THRESHOLD + 2;
         uint64_t key2 = 4 * THRESHOLD + 20;
+        uint64_t key3 = 0;
+        uint64_t key4 = 270;
 
         kvPairs res1 = db.Scan(key1, key2);
+        kvPairs res2 = db.Scan(key3, key4);
 
         assert(res1.size() == 0);  // since keys are out of range
+        assert(res2.size() == 270); 
+        
+        bool found = false;
+        for (size_t i = 0; i < res2.size(); i++) {
+            const auto& t = res2[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+
+            if (std::get<0>(t) == 267) {
+                found = true;
+            }
+ 
+            assert(k == v);
+        }
+        assert(!found); // i.e. the number that was not added was not found in the resulting scan 
 
         std::cout << "DB::ScanSSTDeeper() for sst empty test passed!" << std::endl;
 
@@ -469,7 +488,7 @@ class DBTester {
 
         assert(res1.size() == (3 * THRESHOLD) + 1);  // size should be 49513
 
-        for (size_t i = 0; i < res1.size(); ++i) {
+        for (size_t i = 0; i < res1.size(); i++) {
             const auto& t = res1[i];
             uint64_t k = std::get<0>(t);
             uint64_t v = std::get<1>(t);
@@ -517,8 +536,81 @@ class DBTester {
         std::cout << "DB::CloseFully() test passed!" << std::endl;
     }
 
-    void testDBScanGetKeysNotThere() {
-        return;
+    void testDBReopenGet() {
+        const std::string testDB = "testdb";
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+        
+        DB db;
+        db.Open(testDB);
+        
+        // Insert enough to flush to SST
+        uint64_t j = 0;
+        
+        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+            db.Put(i, j);
+            j++;
+        }
+        std::vector<sstMetadata> saveState = db.sstMetadataCache;
+        db.Close();
+        DB db2;
+        db2.Open(testDB);
+        
+        for (size_t i = 0; i < saveState.size(); i++) {
+            assert(saveState[i] == db2.sstMetadataCache[i]);
+        }
+        
+        // assert(db2.sstMetadataCache.size() - 1 == saveState.size());
+    
+        // Make sure data is still there
+        assert(db2.Get(1).value() == 1);
+        assert(db2.Get(2 * THRESHOLD + 51).value() == 2 * THRESHOLD + 51);
+        assert(db2.Get(THRESHOLD + 2213).value() == THRESHOLD + 2213);
+
+        db2.Close();
+        std::filesystem::remove_all(testDB);
+        std::cout << "DB::testDBReopenGet() persistance test passed!" << std::endl;
+    }
+
+    void testDBScanGetMultipleKeysNotThere() {
+        const std::string testDB = "testdb";
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+            if (i % 2 == 0) {
+                db.Put(i, i);
+            }
+        }
+
+        uint64_t key1 = 0;
+        uint64_t key2 = 2 * THRESHOLD;
+
+        kvPairs res1 = db.Scan(key1, key2);
+
+        assert(res1.size() == THRESHOLD + 1);
+
+        bool oddFound = false;
+
+        for (size_t i = 0; i < res1.size(); i++) {
+            const auto& t = res1[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+
+            if (std::get<0>(t) % 2 != 0) {
+                oddFound = true; // since we didn't insert any odd key value pairs
+            }
+
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+        assert(!oddFound); // i.e. ensuring that no odd key value pairs were found
+        std::cout << "DB::testDBScanGetMultipleKeysNotThere() test passed!" << std::endl;
     }
 };
 
@@ -540,6 +632,7 @@ int main() {
     tester.testDBScanSSTDeeper();
     tester.testDBScanSSTEmpty();
     tester.testDBScanAcrossSSTs();
-    tester.testDBScanGetKeysNotThere();
+    tester.testDBReopenGet();
+    tester.testDBScanGetMultipleKeysNotThere();
     return 0;
 }

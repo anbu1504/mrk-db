@@ -112,7 +112,7 @@ ssize_t BufferPool::comboRead(std::string filepath, int sstNumber, int pageOffse
     ssize_t bytesRead;
 
     if (!bufferPoolRead.has_value()) {
-        int fd = open(filepath.c_str(), O_RDONLY);
+        int fd = open(filepath.c_str(), O_RDONLY | O_DIRECT);
         if (fd == -1) {
             close(fd);
             throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));

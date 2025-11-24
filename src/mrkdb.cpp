@@ -141,8 +141,6 @@ int DB::Close() {
         sstCount++;
     }
 
-    delete memtable;
-
     std::ofstream metadataFile(databaseName + "/" + METADATA_FILENAME);
 
     if (metadataFile.is_open()) {
@@ -151,6 +149,11 @@ int DB::Close() {
         metadataFile.close();
     }
 
+    delete memtable;
+    delete bufferPool;
+    sstMetadataCache.clear();
+    sstCount = 0;
+    
     return 0;
 };
 

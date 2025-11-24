@@ -2,3 +2,4 @@
 .idea/*
 build/*
 mrkdb_tests
+testdb
