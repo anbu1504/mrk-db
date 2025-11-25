@@ -108,7 +108,12 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
     std::vector<uint64_t> keysNotFound;
     std::vector<uint64_t> keysToFind;
 
-    auto [entryCount, internalNodeCount, filterBitCount, minKey, maxKey] = metadata;
+
+    size_t entryCount = std::get<0>(metadata);
+    // size_t internalNodeCount = std::get<1>(metadata);
+    uint64_t filterBitCount = std::get<2>(metadata);
+    uint64_t minKey = std::get<3>(metadata);
+    uint64_t maxKey = std::get<4>(metadata);
 
     BloomFilter filter(filterBitCount, 0);
     uint64_t filterPageCount = filter.getNumPages();
@@ -241,13 +246,12 @@ BloomFilter constructBloomFilter(std::vector<uint64_t>* memtable_data) {
 // B-Tree Stuff
 
 // Constructs a layer of the B-Tree, and returns a list of BTNodes
-// (also stores current layer data in the curr_layer_data variable)
-std::vector<BTNode> constructLayer(
+// (also stores current layer data, list of page-nums and max-keys,
+// in the curr_layer_data variable)
+void constructLayer(
     uint64_t page_offset, uint64_t layer_size, std::vector<std::tuple<uint64_t, uint64_t>>* child_layer_data,
-    std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data  // output for list of page-nums and max-keys
+    std::vector<std::tuple<uint64_t, uint64_t>>* curr_layer_data, std::vector<BTNode>* curr_layer
 ) {
-    std::vector<BTNode> curr_layer;  // list of nodes in the current layer
-
     // The collective total number of children to this layer
     uint64_t total_layer_children = child_layer_data->size();
 
@@ -292,11 +296,9 @@ std::vector<BTNode> constructLayer(
         }
 
         // We do (node_children_count - 1) to get the number of delimiting keys in the node
-        curr_layer.push_back(std::make_tuple(node_children_count - 1, keys_vector, children_vector));
+        curr_layer->push_back(std::make_tuple(node_children_count - 1, keys_vector, children_vector));
         curr_layer_data->push_back(std::make_tuple(page_offset + node_num, final_child_max));
     }
-
-    return curr_layer;
 }
 
 std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data, uint64_t num_filter_pages) {
@@ -340,7 +342,7 @@ std::vector<BTNode> constructInternalNodes(std::vector<uint64_t>* memtable_data,
         // Used to calculate the actual page number of each node
         page_offset -= layer_sizes[layer_num];
 
-        curr_layer = constructLayer(page_offset, layer_sizes[layer_num], &child_layer_data, &curr_layer_data);
+        constructLayer(page_offset, layer_sizes[layer_num], &child_layer_data, &curr_layer_data, &curr_layer);
 
         // Add everything in curr_layer to finalNodeVec, from largest page-num to smallest
         while (!curr_layer.empty()) {
