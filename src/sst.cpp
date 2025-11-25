@@ -272,11 +272,15 @@ void constructLayer(
     for (uint64_t node_num = 0; node_num < layer_size; node_num++) {
         // Number of children for this node
         uint64_t node_children_count = min_children_per_node;
-
-        if (extra_children) {  // If there're extra children, assign one to this node
+        
+        if (node_num < extra_children) {
             node_children_count++;
-            extra_children--;
         }
+
+        // if (extra_children) {  // If there're extra children, assign one to this node
+        //     node_children_count++;
+        //     extra_children--;
+        // }
 
         std::vector<u_int64_t> keys_vector;
         std::vector<u_int64_t> children_vector;
