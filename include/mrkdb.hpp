@@ -67,7 +67,7 @@ class DB {
      *
      * @param key The key for which the associated value will be retrieved
      */
-    std::optional<uint64_t> Get(uint64_t key);
+    uint64_t Get(uint64_t key);
 
     /**
      * @brief Retrieves all KV-pairs in a key range in key order (key1 < key2).
@@ -76,6 +76,14 @@ class DB {
      * @param key1 The last key in the key range for which values will be retrieved
      */
     kvPairs Scan(uint64_t key1, uint64_t key2);
+
+    /**
+     * @brief Deletes a key-value pair based on the key
+     * 
+     * @param key The key in question who's key value pair should be deleted
+     */
+
+    int Delete(uint64_t key);
 
     /**
      * @brief Closes the database.

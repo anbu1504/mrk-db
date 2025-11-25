@@ -22,11 +22,11 @@ int calcNumPages(size_t numKeys) {
 int calcNumItemsInPage(size_t numKeys, int pageNum) {
     int currPageNum = pageNum - 1;
     size_t numItems = 2 * numKeys;
-    int numPages = calcNumPages(numItems);
+    int numPages = calcNumPages(numKeys);
 
     if (currPageNum == numPages - 1) {
-        int itemsLastPage = numItems % UINT64S_PER_PAGE;
-        if (!itemsLastPage) { // 0
+        size_t itemsLastPage = numItems % UINT64S_PER_PAGE;
+        if (itemsLastPage == 0) { // 0
             return UINT64S_PER_PAGE;
         }
         else {
@@ -162,7 +162,7 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
             currPage = getNextBTreeNode(currKey, pageBuf);
         }
         candidatePageNum = currPage;
-        bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * currPage, pageBuf, PAGE_SIZE);
+        bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * candidatePageNum, pageBuf, PAGE_SIZE);
         // bytesRead = pread(fd, pageBuf, PAGE_SIZE, PAGE_SIZE * currPage);
         itemsRead = calcNumItemsInPage(entryCount, candidatePageNum);
 

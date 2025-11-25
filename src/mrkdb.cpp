@@ -61,7 +61,7 @@ int DB::Open(const std::string dbName) {
     return 0;
 };
 
-std::optional<uint64_t> DB::Get(uint64_t key) {
+uint64_t DB::Get(uint64_t key) {
     std::optional<uint64_t> memtableValue = memtable->getValue(key);
 
     if (memtableValue.has_value()) {
@@ -80,7 +80,7 @@ std::optional<uint64_t> DB::Get(uint64_t key) {
         }
     }
 
-    return std::nullopt;
+    return TOMBSTONE;
 }
 
 kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
@@ -123,6 +123,9 @@ kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
 }
 
 int DB::Put(uint64_t key, uint64_t value) {
+    if (value == TOMBSTONE) {
+        return 1;
+    }
     bool success = memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
@@ -134,6 +137,14 @@ int DB::Put(uint64_t key, uint64_t value) {
 
     return !success;  // 0 for success, 1 for failure
 };
+
+int DB::Delete(uint64_t key) {
+    bool successfulDelete = memtable->insert(key, TOMBSTONE);
+    if (successfulDelete) {
+        return 0;
+    }
+    return 1;
+}
 
 int DB::Close() {
     if (!memtable->isEmpty()) {

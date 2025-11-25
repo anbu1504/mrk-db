@@ -44,9 +44,9 @@ class DBTester {
         db.Put(key2, val2);
         db.Put(key3, val3);
 
-        uint64_t res1 = db.Get(key1).value();
-        uint64_t res2 = db.Get(key2).value();
-        uint64_t res3 = db.Get(key3).value();
+        uint64_t res1 = db.Get(key1);
+        uint64_t res2 = db.Get(key2);
+        uint64_t res3 = db.Get(key3);
 
         assert(res1 == 100);
         assert(res2 == 200);
@@ -73,9 +73,9 @@ class DBTester {
             j++;
         }
 
-        uint64_t val1 = db.Get(1).value();
-        uint64_t val2 = db.Get(2).value();
-        uint64_t val3 = db.Get(3).value();
+        uint64_t val1 = db.Get(1);
+        uint64_t val2 = db.Get(2);
+        uint64_t val3 = db.Get(3);
 
         assert(val1 == 1);
         assert(val2 == 2);
@@ -102,14 +102,14 @@ class DBTester {
             j++;
         }
 
-        uint64_t val1 = db.Get(1).value();
-        uint64_t val2 = db.Get(THRESHOLD + 2).value();
-        uint64_t val3 = db.Get((2 * THRESHOLD) + 2).value();
-        uint64_t val4 = db.Get((3 * THRESHOLD) + 23).value();
-        uint64_t val5 = db.Get((4 * THRESHOLD) + 24).value();
-        uint64_t val6 = db.Get((5 * THRESHOLD) + 30).value();
-        uint64_t val7 = db.Get((6 * THRESHOLD) + 41).value();
-        uint64_t val8 = db.Get((7 * THRESHOLD) + 55).value();
+        uint64_t val1 = db.Get(1);
+        uint64_t val2 = db.Get(THRESHOLD + 2);
+        uint64_t val3 = db.Get((2 * THRESHOLD) + 2);
+        uint64_t val4 = db.Get((3 * THRESHOLD) + 23);
+        uint64_t val5 = db.Get((4 * THRESHOLD) + 24);
+        uint64_t val6 = db.Get((5 * THRESHOLD) + 30);
+        uint64_t val7 = db.Get((6 * THRESHOLD) + 41);
+        uint64_t val8 = db.Get((7 * THRESHOLD) + 55);
 
         assert(val1 == 1);
         assert(val2 == THRESHOLD + 2);
@@ -149,7 +149,7 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(key4);
 
-        assert(res1 == std::nullopt);
+        assert(res1 == TOMBSTONE);
 
         std::cout << "DB::GetEmpty() for memtable test passed!" << std::endl;
 
@@ -174,7 +174,7 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(2 * THRESHOLD);
 
-        assert(res1 == std::nullopt);
+        assert(res1 == TOMBSTONE);
 
         std::cout << "DB::GetEmptySST() for sst test passed!" << std::endl;
 
@@ -199,7 +199,7 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(5 * THRESHOLD);
 
-        assert(res1 == std::nullopt);
+        assert(res1 == TOMBSTONE);
 
         std::cout << "DB::GetEmptySSTDeeper() for sst test passed!" << std::endl;
 
@@ -563,9 +563,9 @@ class DBTester {
         // assert(db2.sstMetadataCache.size() - 1 == saveState.size());
     
         // Make sure data is still there
-        assert(db2.Get(1).value() == 1);
-        assert(db2.Get(2 * THRESHOLD + 51).value() == 2 * THRESHOLD + 51);
-        assert(db2.Get(THRESHOLD + 2213).value() == THRESHOLD + 2213);
+        assert(db2.Get(1) == 1);
+        assert(db2.Get(2 * THRESHOLD + 51) == 2 * THRESHOLD + 51);
+        assert(db2.Get(THRESHOLD + 2213) == THRESHOLD + 2213);
 
         db2.Close();
         std::filesystem::remove_all(testDB);
@@ -612,6 +612,200 @@ class DBTester {
         assert(!oddFound); // i.e. ensuring that no odd key value pairs were found
         std::cout << "DB::testDBScanGetMultipleKeysNotThere() test passed!" << std::endl;
     }
+
+    void testDBDeleteMemtable() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        db.Put(10, 100);
+        db.Delete(10);
+
+        auto res = db.Get(10);
+        assert(res == TOMBSTONE);
+
+        std::cout << "DB::testDBDeleteMemtable() test passed!" << std::endl;
+    }
+
+    void testDBDeleteSST() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Delete((6 * THRESHOLD) + 67);
+        
+        auto res = db.Get((6 * THRESHOLD) + 67);
+
+        assert(res == TOMBSTONE);
+        std::cout << "DB::testDBDeleteSST() test passed!" << std::endl;
+    }
+
+    void testDBDeletesTwice() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Delete((7 * THRESHOLD) + 76);
+        db.Delete((7 * THRESHOLD) + 76);
+        
+        auto res = db.Get((7 * THRESHOLD) + 76);
+
+        assert(res == TOMBSTONE);
+        std::cout << "DB::testDBDeletesTwice() test passed!" << std::endl;
+    }
+
+    void testDBDeleteReinsert() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        db.Put(5, 500);
+        db.Delete(5);
+        db.Put(5, 999);
+
+        auto res = db.Get(5);
+
+        assert(res == 999);
+        std::cout << "DB::testDBDeleteReinsert() test passed!" << std::endl;
+    }
+
+    void testDBMultipleDeletes() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Delete((4 * THRESHOLD) + 23);
+        db.Delete((5 * THRESHOLD) + 999);
+        db.Delete((6 * THRESHOLD) + 67);
+        db.Delete((7 * THRESHOLD) + 6768);
+
+        auto res1 = db.Get((4 * THRESHOLD) + 23);
+        auto res2 = db.Get((5 * THRESHOLD) + 999);
+        auto res3 = db.Get((6 * THRESHOLD) + 67);
+        auto res4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1 == TOMBSTONE);
+        assert(res2 == TOMBSTONE);
+        assert(res3 == TOMBSTONE);
+        assert(res4 == TOMBSTONE);
+        std::cout << "DB::testDBMultipleDeletes() test passed!" << std::endl;
+    }
+
+    void testDBMultipleDeletesDeeper() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Delete((4 * THRESHOLD) + 23);
+        db.Delete((5 * THRESHOLD) + 999);
+        db.Delete((6 * THRESHOLD) + 67);
+        db.Delete((7 * THRESHOLD) + 6768);
+
+        for (uint64_t i = 9 * THRESHOLD; i < (18 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        auto res1 = db.Get((4 * THRESHOLD) + 23);
+        auto res2 = db.Get((5 * THRESHOLD) + 999);
+        auto res3 = db.Get((6 * THRESHOLD) + 67);
+        auto res4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1 == TOMBSTONE);
+        assert(res2 == TOMBSTONE);
+        assert(res3 == TOMBSTONE);
+        assert(res4 == TOMBSTONE);
+        std::cout << "DB::testDBMultipleDeletesDeeper() test passed!" << std::endl;
+    }
+
+    void testDBPersistentDeletes() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+        auto resv1 = db.Get((4 * THRESHOLD) + 23);
+        auto resv2 = db.Get((5 * THRESHOLD) + 999);
+        auto resv3 = db.Get((6 * THRESHOLD) + 67);
+        auto resv4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert((resv1 = (4 * THRESHOLD) + 23));
+        assert((resv2 = (5 * THRESHOLD) + 999));
+        assert((resv3 = (6 * THRESHOLD) + 67));
+        assert((resv4 = (7 * THRESHOLD) + 6768));
+
+        db.Delete((4 * THRESHOLD) + 23);
+        db.Delete((5 * THRESHOLD) + 999);
+        db.Delete((6 * THRESHOLD) + 67);
+        db.Delete((7 * THRESHOLD) + 6768);
+
+        std::vector<sstMetadata> saveState = db.sstMetadataCache;
+
+        db.Close();
+        DB db2;
+        db2.Open(testDB);
+
+        for (size_t i = 0; i < saveState.size(); i++) {
+            assert(saveState[i] == db2.sstMetadataCache[i]);
+        }
+
+        auto res1 = db2.Get((4 * THRESHOLD) + 23);
+        auto res2 = db2.Get((5 * THRESHOLD) + 999);
+        auto res3 = db2.Get((6 * THRESHOLD) + 67);
+        auto res4 = db2.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1 == TOMBSTONE);
+        assert(res2 == TOMBSTONE);
+        assert(res3 == TOMBSTONE);
+        assert(res4 == TOMBSTONE);
+
+        std::cout << "DB::testDBPersistentDeletes() test passed!" << std::endl;
+    }
 };
 
 int main() {
@@ -634,5 +828,12 @@ int main() {
     tester.testDBScanAcrossSSTs();
     tester.testDBReopenGet();
     tester.testDBScanGetMultipleKeysNotThere();
+    tester.testDBDeleteMemtable();
+    tester.testDBDeleteSST();
+    tester.testDBDeletesTwice();
+    tester.testDBDeleteReinsert();
+    tester.testDBMultipleDeletes();
+    tester.testDBMultipleDeletesDeeper();
+    tester.testDBPersistentDeletes();
     return 0;
 }

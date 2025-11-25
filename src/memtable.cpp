@@ -60,7 +60,7 @@ void Memtable::scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>>* entries,
 
     if (node->key > min) scanTreeRec(entries, node->left, min, max);
 
-    if (node->key >= min && node->key <= max) entries->push_back(std::make_tuple(node->key, node->value));
+    if (node->key >= min && node->key <= max) entries->push_back(std::make_tuple(node->key, node->value)); // we want to ensure that we skip tombstones when building scan results
 
     if (node->key < max) scanTreeRec(entries, node->right, min, max);
 }
@@ -121,6 +121,10 @@ Node* Memtable::insertRec(Node* node, uint64_t key, uint64_t value) {
         node->left = insertRec(node->left, key, value);
     } else if (key > node->key) {
         node->right = insertRec(node->right, key, value);
+    }
+    else {
+        node->value = value;
+        return node;
     }
     node->height = 1 + std::max(height(node->left), height(node->right));
 
