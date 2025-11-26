@@ -12,20 +12,11 @@
 #include <tuple>    // Needed for std::get
 #include <utility>  // Needed for std::swap
 
-#include "../include/sst.hpp"
-
-#define METADATA_FILENAME ".metadata"
-#define INITIAL_DIR_SIZE 4
-#define MAX_DIR_SIZE 64
-#define MAX_NUM_PAGES 4096
-
 int DB::Open(const std::string dbName) {
     databaseName = dbName;
     memtable = new Memtable(THRESHOLD);
     bufferPool = new BufferPool(INITIAL_DIR_SIZE, MAX_DIR_SIZE, MAX_NUM_PAGES);
     sstCount = 0;
-
-    
 
     if (!std::filesystem::create_directory(dbName)) {  // If the DB already exists
         std::ifstream metadataFile(databaseName + "/" + METADATA_FILENAME);
@@ -168,27 +159,3 @@ int DB::Close() {
     return 0;
 };
 
-// In-place merge-sort for a vector of kvPairs (i.e., vector of vectors)
-// Does not return anything, and instead replaces all the vectors within the input w/ 1 sorted vector
-void DB::mergeSort(std::vector<kvPairs>* vectors) {
-    // Temporary variable to help with merge-sort
-    std::vector<kvPairs> merged;
-
-    // Greedy iterative 2-way merge-sort
-    while (vectors->size() != 1) {
-        // Clear and initialize the result vector (merged)
-        // w/ the necessary number of placeholders
-        merged.assign(CEIL_DIV(vectors->size(), 2), kvPairs());
-
-        for (size_t i = 0; i < merged.size(); i++) {
-            if (i * 2 + 1 == vectors->size()) {
-                merged[i] = vectors->at(i * 2);
-            } else {
-                std::merge(vectors->at(i * 2).begin(), vectors->at(i * 2).end(), vectors->at(i * 2 + 1).begin(),
-                           vectors->at(i * 2 + 1).end(), std::back_inserter(merged[i]));
-            }
-        }
-
-        std::swap(*vectors, merged);
-    }
-}

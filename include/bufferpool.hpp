@@ -1,20 +1,6 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
-#include <fstream>
-#include <iostream>
-#include <optional>
-#include <string>
-// #include <tuple>
-#include <fcntl.h>  // Also needed for O_DIRECT(?)
-#include <unistd.h>
-
-#include <cstring>
-#include <functional>
-#include <vector>
-
-#define BUCKET_OVERFLOW_THRESHOLD 4
+#include "constants.hpp"
 
 class HashMap {
     friend class HashMapTester;
@@ -63,21 +49,23 @@ class HashMap {
 };
 
 class BufferPool {
-   public:
-    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages);  // constructor
-    ~BufferPool();                                                          // destructor to free memory
-    size_t initialDirSize;                                                  // Initial number of buckets in hash map
-    size_t maxDirSize;                                                      // Maximum number of buckets in hash map
-    size_t maxPages;
-    size_t numPages;  // Maximum number of pages in buffer pool
-    std::optional<std::tuple<int, uint64_t*>> searchPage(int sstNum, int pageOffset);
-    uint64_t* addPage(int sstNum, int pageOffset, uint64_t* buffer, size_t pageSize);
-    ssize_t comboRead(std::string filepath, int sstNumber, int pageOffset, uint64_t* buffer,
-                      ssize_t numBytesToRead);  // return number of bytes of read
-
    private:
     HashMap* hashMap;
     std::vector<std::string> clockVector;
     uint64_t* evict();
-    int clockHandle;
+    uint64_t clockHandle;
+    size_t initialDirSize;                                                  // Initial number of buckets in hash map
+    size_t maxDirSize;                                                      // Maximum number of buckets in hash map
+    size_t maxPages;
+    size_t numPages;  // Maximum number of pages in buffer pool
+    std::string dbName;
+    std::optional<std::tuple<uint64_t, uint64_t*>> searchPage(uint64_t sstNum, uint64_t pageOffset);
+    uint64_t* addPage(uint64_t sstNum, uint64_t pageOffset, uint64_t* buffer, size_t pageSize);
+
+   public:
+    BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages, std::string dbName);  // constructor
+    ~BufferPool();                                                          // destructor to free memory
+
+    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes read
+    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
 };

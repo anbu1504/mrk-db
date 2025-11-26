@@ -1,20 +1,21 @@
 #pragma once
 
-#include <cstdint>
-#include <filesystem>
-#include <functional>
-#include <string>
-#include <tuple>
-#include <vector>
+#include <optional>
 
 #include "bufferpool.hpp"
 #include "constants.hpp"
-#include "memtable.hpp"
+#include "lsmtree.hpp"
 
-static_assert(sizeof(unsigned long long) == 8, "Expect 64-bit unsigned type");
-
-#define THRESHOLD 16384
+#define MEMTABLE_THRESHOLD 16384
 #define USE_BTREE_SEARCH true
+
+#define BITS_PER_ENTRY 12
+#define NUM_HASH_FUNCS 8
+
+#define BUCKET_OVERFLOW_THRESHOLD 4
+#define INITIAL_DIR_SIZE 4
+#define MAX_DIR_SIZE 64
+#define MAX_NUM_PAGES 4096
 
 /**
  * @class DB
@@ -25,25 +26,12 @@ class DB {
 
    private:
     // Name of the database
-    std::string databaseName;
+    std::string dbName;
 
-    // Memtable (binary tree)
-    Memtable* memtable;
-
-    // Number of SSTs
-    int sstCount;
+    LSMTree* lsmTree;
 
     // Bufferpool
-    BufferPool* bufferPool;
-
-    // For each SST, records a tuple of <numEntries, numInternalNodes, numFilterBits, minKey, maxKey>
-    std::vector<sstMetadata> sstMetadataCache;
-
-    // // Private helper functions
-    // std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys, int sstNum);
-    // uint64_t getNextBTreeNode(uint64_t currKey, uint64_t* pageBuf);
-    void mergeSort(std::vector<kvPairs>* vectors);
-    // int binSearch(int lo, int hi, const std::function<int(int)>& comparator);
+    BufferPool* bufPool;
 
    public:
     /**
@@ -67,7 +55,7 @@ class DB {
      *
      * @param key The key for which the associated value will be retrieved
      */
-    uint64_t Get(uint64_t key);
+    std::optional<uint64_t> Get(uint64_t key);
 
     /**
      * @brief Retrieves all KV-pairs in a key range in key order (key1 < key2).
