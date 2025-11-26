@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "constants.hpp"
+#include "bufferpool.hpp"
 
 #define ULLONGS_PER_PAGE PAGE_SIZE / sizeof(uint64_t)
 #define BITSET_SIZE 64  // size of uint64_t
@@ -27,6 +28,8 @@ class BloomFilter {
     uint64_t getNumPages();  // Number of pages the bloom filter would take up if written to disk
     void addKey(uint64_t key);
     void initFromBuf(uint64_t* pageBuf);
+    void initFromSST(BufferPool* bufPool, int filterStart, std::string filename, int sstNum);
     bool checkKey(uint64_t key);
+    bool checkKey2(uint64_t key, BufferPool* bufPool, int filterStart, std::string filename, int sstNum);
     std::vector<uint64_t> flattenBloomFilter();
 };

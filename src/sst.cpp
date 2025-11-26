@@ -111,11 +111,11 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
 
     size_t entryCount = std::get<0>(metadata);
     // size_t internalNodeCount = std::get<1>(metadata);
-    uint64_t filterBitCount = std::get<2>(metadata);
+    // uint64_t filterBitCount = std::get<2>(metadata);
     uint64_t minKey = std::get<3>(metadata);
     uint64_t maxKey = std::get<4>(metadata);
 
-    BloomFilter filter(filterBitCount, 0);
+    BloomFilter filter(entryCount);
     uint64_t filterPageCount = filter.getNumPages();
     uint64_t leafPageCount = calcNumPages(entryCount);    
 
@@ -124,21 +124,19 @@ std::tuple<kvPairs, std::vector<uint64_t>> sstSearch(std::vector<uint64_t> keys,
     // if last page is not full, then return total entries % entries in a page
     // if last page is full (i.e. modulo returns 0), then return entries in a page
 
-    uint64_t filterBuf[PAGE_SIZE / sizeof(uint64_t)];
-    // Initialize the bloom filter (starts at 1 to account for metadata page)
-    for (size_t pageNum = 1 + leafPageCount; pageNum < 1 + leafPageCount + filterPageCount; pageNum++) {
-        bufferPool->comboRead(SST_PATH(sstNum), sstNum, PAGE_SIZE * pageNum, filterBuf, PAGE_SIZE);
-        filter.initFromBuf(filterBuf);
-    }
+    filter.initFromSST(bufferPool, 1 + leafPageCount, SST_PATH(sstNum), sstNum);
 
     // Filter out keys that are either outside the range of this SST, or not in the bloom filter
+    // PRINT("before filter");
     for (size_t i = 0; i < keys.size(); i++) {
+        // if (keys[i] < minKey || keys[i] > maxKey || !filter.checkKey2(keys[i], bufferPool, 1 + leafPageCount, SST_PATH(sstNum), sstNum)) {
         if (keys[i] < minKey || keys[i] > maxKey || !filter.checkKey(keys[i])) {
             keysNotFound.push_back(keys[i]);
         } else {
             keysToFind.push_back(keys[i]);
         }
     }
+    // PRINT("after filter");
     
     // If we have no keys to look for in this SST, then no need to do any I/O here
     if (keysToFind.empty()) {
@@ -465,13 +463,6 @@ sstMetadata sstWrite(std::string filename, std::vector<uint64_t>* memtable_data,
 
     written = write(fd, filter_data.data(), filter_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, filter_data.size() * sizeof(uint64_t));
-
-    if (filter_bytes % PAGE_SIZE) {  // If we don't nicely fill out a page, pad it with 0s
-        size_t filter_padding = PAGE_SIZE - (filter_bytes % PAGE_SIZE);
-        std::vector<char> filter_zero_buf(filter_padding, 0);
-        written = write(fd, filter_zero_buf.data(), filter_padding);
-        checkWrite(written, fd, filter_padding);
-    }
 
     written = write(fd, internal_data.data(), internal_data.size() * sizeof(uint64_t));
     checkWrite(written, fd, internal_data.size() * sizeof(uint64_t));

@@ -9,15 +9,7 @@
  */
 BloomFilter::BloomFilter(size_t num_keys)
     : total_bits(num_keys * BITS_PER_ENTRY),
-      filter(CEIL_DIV(num_keys * BITS_PER_ENTRY, BITSET_SIZE)),
-      num_bitsets_initialized(CEIL_DIV(num_keys * BITS_PER_ENTRY, BITSET_SIZE)) {}
-
-/**
- * @brief Constructor #2 for the BloomFilter class
- */
-BloomFilter::BloomFilter(uint64_t total_bits, int x)
-    : total_bits(total_bits),
-      filter(CEIL_DIV(total_bits, BITSET_SIZE), x),
+      filter(CEIL_DIV(num_keys * BITS_PER_ENTRY, PAGE_SIZE * 8) * UINT64S_PER_PAGE),
       num_bitsets_initialized(0) {}
 
 /**
@@ -48,6 +40,16 @@ void BloomFilter::initFromBuf(uint64_t* pageBuf) {
     }
 }
 
+void BloomFilter::initFromSST(BufferPool* bufPool, int filterStart, std::string filename, int sstNum) {
+    uint64_t pageBuf[UINT64S_PER_PAGE];
+
+    for (uint64_t pageNum = filterStart; pageNum < filterStart + getNumPages(); pageNum++) {
+        bufPool->comboRead(filename, sstNum, PAGE_SIZE * pageNum, pageBuf, PAGE_SIZE);
+
+        initFromBuf(pageBuf);
+    }
+}
+
 bool BloomFilter::checkKey(uint64_t key) {
     for (int hash_seed = 0; hash_seed < NUM_HASH_FUNCS; hash_seed++) {
         uint64_t hash_val = XXHash64::hash(&key, sizeof(uint64_t), hash_seed) % total_bits;
@@ -56,6 +58,27 @@ bool BloomFilter::checkKey(uint64_t key) {
         uint64_t bit_num = hash_val % BITSET_SIZE;
 
         if (!((filter[bitset_num] >> bit_num) & (1ULL))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool BloomFilter::checkKey2(uint64_t key, BufferPool* bufPool, int filterStart, std::string filename, int sstNum) {
+    uint64_t pageBuf[UINT64S_PER_PAGE];
+
+    for (int hash_seed = 0; hash_seed < NUM_HASH_FUNCS; hash_seed++) {
+        uint64_t hash_val = XXHash64::hash(&key, sizeof(uint64_t), hash_seed) % total_bits;
+
+        uint64_t absolute_bitset_num = hash_val / BITSET_SIZE;
+        uint64_t page_num = absolute_bitset_num / UINT64S_PER_PAGE;
+        uint64_t bitset_num = absolute_bitset_num % UINT64S_PER_PAGE;
+
+        uint64_t bit_num = hash_val % BITSET_SIZE;
+
+        bufPool->comboRead(filename, sstNum, PAGE_SIZE * (filterStart + page_num), pageBuf, PAGE_SIZE);
+
+        if (!((pageBuf[bitset_num] >> bit_num) & (1ULL))) {
             return false;
         }
     }
