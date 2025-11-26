@@ -15,7 +15,7 @@
 class BloomFilter {
    private:
     uint64_t total_bits;
-    std::vector<std::bitset<BITSET_SIZE>> filter;
+    std::vector<uint64_t> filter;
     size_t num_bitsets_initialized;
 
    public:
