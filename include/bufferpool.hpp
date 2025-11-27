@@ -38,9 +38,9 @@ class HashMap {
 
     int insert(std::string pageName, uint64_t* page, size_t pageSize);  // 0 on success 1 on fail
     std::optional<Node*> search(std::string pageName);
-    std::optional<Node*> remove(std::string pageName);  // 0 on success 1 on fail
+    std::optional<Node*> remove(std::string pageName);  
     int extendDir();                                    // 0 on success 1 on fail
-    int rehashBuckets();
+    int rehashBuckets();                                // 0 on success 1 on fail
 
    private:
     uint64_t hashFunction(std::string key);
@@ -68,4 +68,5 @@ class BufferPool {
 
     ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes read
     ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
+    void evictAllPages(); // evicts all pages and writes dirty pages to storage
 };
