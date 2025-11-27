@@ -244,4 +244,3 @@ uint64_t Memtable::getMin(Node* node) {
         return getMin(node->left);
     }
 }
-

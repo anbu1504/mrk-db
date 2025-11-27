@@ -12,9 +12,6 @@ class SSTView {
     uint64_t pagePos;
     
    public:
-
-    SSTView(BufferPool* bufPool, uint64_t sstNum);
-
     bool checkForKey(uint64_t key);
     void findPage(uint64_t key);
     void fastFwd(uint64_t key);
