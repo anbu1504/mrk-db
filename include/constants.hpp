@@ -11,6 +11,7 @@
 #define UINT64S_PER_PAGE 512
 #define LN_2 0.69
 #define TOMBSTONE UINT64_MAX // source: project doc
+#define UINT64_SIZE_BITS 64
 
 #define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 #define PRINT(x) (std::cout << x << std::endl)

@@ -9,9 +9,12 @@ class BloomFilter {
     uint64_t sstNum;
     uint64_t numKeys;
     uint64_t pageOffset;
+    uint64_t bitsPerEntry; // M
+    uint64_t numHashFunctions;
+    uint64_t totalBits;
 
    public:
-    BloomFilter(uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
+    BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset, uint64_t bitsPerEntry);
     ~BloomFilter();
 
     void addKey(uint64_t key);
