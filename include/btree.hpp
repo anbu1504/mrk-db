@@ -9,9 +9,13 @@ class BTree {
     uint64_t sstNum;
     uint64_t numKeys;
     uint64_t pageOffset;
+    uint64_t numInternalNodes;
+    uint64_t numLeafNodes;
+
+    uint64_t getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf);
 
    public:
-    BTree(uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
+    BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
     ~BTree();
 
     uint64_t findLeafPage(uint64_t key);

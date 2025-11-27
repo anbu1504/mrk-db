@@ -10,6 +10,10 @@ Holds the following:
 - dbName
 - ~~sstCount~~
 
+Will store the following on closing (and use it when reopening):
+- meta.sst
+    - Will contain the number of levels of the lsm tree, followed by that many uint64s, set to either 0 or 1 depending on whether that level was occupied by an sst or not
+
 
 ### LSMTree
 Holds the following:

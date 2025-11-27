@@ -9,8 +9,7 @@ BloomFilter::BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys,
     : bufPool(bufPool),
       sstNum(sstNum),
       numKeys(numKeys),
-      pageOffset(pageOffset),
-      bitsPerEntry(bitsPerEntry) 
+      pageOffset(pageOffset)
 {
     numHashFunctions = static_cast<uint64_t>(bitsPerEntry * LN_2); // number of hash functions calculation from slides (M * ln(2))
     totalBits = numKeys * bitsPerEntry;
