@@ -12,7 +12,6 @@ class BloomFilter {
     uint64_t sstNum;
     uint64_t numKeys;
     uint64_t pageOffset;
-    uint64_t bitsPerEntry; // M
     uint64_t numHashFunctions;
     uint64_t totalBits;
     uint64_t numItems;

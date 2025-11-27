@@ -61,12 +61,12 @@ uint64_t BTree::getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf) {
         return pageBuf[startOfChildren];
     }
 
-    int lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
-    int hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
+    uint64_t lo = 1;                  // Corresponds to the second key (we alr. checked for left child of the first key)
+    uint64_t hi = numKeysInNode - 1;  // Index of last key (we alr. checked for right child of the last key)
 
     // Note, pageBuf[1 + mid] is the key we're currently inspecting
     // (+1 for offset), while pageBuf[mid] is the key before it
-    int mid = binSearch(lo, hi, [&](int m) {
+    uint64_t mid = binSearch(lo, hi, [&](int m) {
         return (currKey <= pageBuf[m]) ? -1 : (currKey > pageBuf[1 + m]) ? 1 : 0;
     });  // Else case: pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
 

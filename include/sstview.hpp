@@ -3,6 +3,8 @@
 #include "constants.hpp"
 #include "bufferpool.hpp"
 #include "bloomfilter.hpp"
+#include "btree.hpp"
+#include "globals.hpp"
 
 class SSTView {
    private:
@@ -16,8 +18,11 @@ class SSTView {
 
     // Used for scans
     PageBuffer pageBuf;
+    uint64_t itemsRead;
     uint64_t pageNum;
     uint64_t pagePos;
+
+    uint64_t calcNumItemsInPage(size_t numKeys, uint64_t pageNum); 
     
    public:
     SSTView(BufferPool* bufPool, uint64_t sstNum);
