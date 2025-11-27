@@ -43,9 +43,13 @@ Has these methods:
     - Accepts: file_id (e.g., 3, 50, temp, etc.), pageNum, pageBuf
     - Could alternatively create an overloaded version that does the same thing, but accepts sstNum and converts it to string first before calling the o.g. bread
     - Note that we should always be reading a page!!
+    - In the internal hash map, if the directory cannot extend further and bucket can't be split and rehashed, bucket threshold no longer applies
 - bwrite
     - The same params as bread
     - It's up to the caller to ensure pageBuf is 0-padded
+- close
+    - To be called when closing the database 
+    - Evicts all pages and writes dirty pages to storage
 
 
 ### SSTView

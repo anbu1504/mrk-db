@@ -68,5 +68,6 @@ class BufferPool {
 
     ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes read
     ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
+    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
     void evictAllPages(); // evicts all pages and writes dirty pages to storage
 };

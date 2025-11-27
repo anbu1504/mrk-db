@@ -10,6 +10,13 @@
 #define MEMTABLE_THRESHOLD 16384
 #define USE_BTREE_SEARCH true
 
+#define BITS_PER_ENTRY 12
+#define NUM_HASH_FUNCS 8
+
+#define INITIAL_DIR_SIZE 4
+#define MAX_DIR_SIZE 64
+#define MAX_NUM_PAGES 4096
+
 /**
  * @class DB
  * @brief The MRK-DB database class.
