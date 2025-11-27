@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 #include "bufferpool.hpp"
+#include "bloomfilter.hpp"
 
 class SSTView {
    private:

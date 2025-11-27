@@ -5,7 +5,7 @@
  * @brief Constructor for the BloomFilter class
  */
 
-BloomFilter::BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset, uint64_t bitsPerEntry)
+BloomFilter::BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset)
     : bufPool(bufPool),
       sstNum(sstNum),
       numKeys(numKeys),

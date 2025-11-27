@@ -4,6 +4,7 @@
 
 #include "constants.hpp"
 #include "bufferpool.hpp"
+#include "globals.hpp"
 
 class BloomFilter {
    private:
@@ -17,7 +18,7 @@ class BloomFilter {
     uint64_t numItems;
 
    public:
-    BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset, uint64_t bitsPerEntry);
+    BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
     ~BloomFilter();
 
     void addKey(uint64_t key);
