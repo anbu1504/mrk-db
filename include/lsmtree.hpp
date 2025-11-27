@@ -6,6 +6,8 @@
 #include "sstview.hpp"
 #include "sstwriter.hpp"
 
+#define SCALE_FACTOR 2
+
 class LSMTree {
    private:
     BufferPool* bufPool;
@@ -18,10 +20,14 @@ class LSMTree {
     int compaction(uint64_t sstNum1, uint64_t sstNum2);
 
    public:
-    LSMTree(BufferPool* bufPool, uint64_t numLevelsValue, uint64_t scaleFactorValue);
+    LSMTree(BufferPool* bufPool, uint64_t numLevelsValue);
+    LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf); // FIRS
     ~LSMTree();
 
     void Put(uint64_t key, uint64_t value);
     uint64_t Get(uint64_t key);
     kvPairs Scan(uint64_t key1, uint64_t key2);
+    void Close();
+    uint64_t getNumLevels();
+    std::vector<uint64_t> getOccupancyLevels();
 };

@@ -1,6 +1,10 @@
 #pragma once
 
 #include <optional>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <limits>
 
 #include "bufferpool.hpp"
 #include "constants.hpp"
@@ -40,7 +44,7 @@ class DB {
      * @param dbName Name of the database to open/create (if it doesn't already exist)
      */
 
-    int Open(const std::string dbName);
+    int Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue);
 
     /**
      * @brief Stores a key associated with a value.

@@ -12,150 +12,184 @@
 #include <tuple>    // Needed for std::get
 #include <utility>  // Needed for std::swap
 
-int DB::Open(const std::string dbName) {
-    databaseName = dbName;
-    memtable = new Memtable(THRESHOLD);
-    bufferPool = new BufferPool(INITIAL_DIR_SIZE, MAX_DIR_SIZE, MAX_NUM_PAGES);
-    sstCount = 0;
+uint64_t getIntputFromUser(const std::string& prompt, uint64_t min = 1, uint64_t max = std::numeric_limits<uint64_t>::max()) {
+    uint64_t value;
+    std::string input;
 
-    if (!std::filesystem::create_directory(dbName)) {  // If the DB already exists
-        std::ifstream metadataFile(databaseName + "/" + METADATA_FILENAME);
+    while (true) {
+        std::cout << prompt;
+        std::getline(std::cin, input);
 
-        if (metadataFile.is_open()) {
-            metadataFile >> sstCount;
-            metadataFile.close();
-        }
+        // Remove leading/trailing spaces
+        input.erase(0, input.find_first_not_of(" \t\n\r"));
+        input.erase(input.find_last_not_of(" \t\n\r") + 1);
 
-        for (int i = 0; i < sstCount; i++) {
-            size_t entryCount;
-            size_t internalNodeCount;
-            uint64_t filterBitCount;
-            uint64_t minKey;
-            uint64_t maxKey;
-
-
-            int fd = open(SST_PATH(i).c_str(), O_RDONLY);
-
-            pread(fd, &entryCount, sizeof(entryCount), 0);
-            pread(fd, &internalNodeCount, sizeof(internalNodeCount), sizeof(size_t));
-            pread(fd, &filterBitCount, sizeof(filterBitCount), sizeof(size_t) * 2);
-            pread(fd, &minKey, sizeof(minKey), sizeof(size_t) * 2 + sizeof(uint64_t));
-            pread(fd, &maxKey, sizeof(maxKey), sizeof(size_t) * 2 + sizeof(uint64_t) * 2);
-                
-            sstMetadataCache.push_back(
-                std::make_tuple(entryCount, internalNodeCount, filterBitCount, minKey, maxKey));
-            close(fd);
-
+        std::stringstream ss(input);
+        if (ss >> value && !(ss >> input)) { // Successful conversion and nothing extra
+            if (value >= min && value <= max) {
+                return value;
+            } else {
+                std::cout << "Value must be between " << min << " and " << max << ". Try again.\n";
+            }
+        } else {
+            std::cout << "Invalid input. Enter a positive integer.\n";
         }
     }
+}
 
+bool getStringAnswer(const std::string& prompt) {
+    std::string input;
+
+    while (true) {
+        std::cout << prompt << " (yes/no): " << std::endl;
+        std::getline(std::cin, input);
+
+        input.erase(0, input.find_first_not_of(" \t\n\r"));
+        input.erase(input.find_last_not_of(" \t\n\r") + 1);
+
+        std::transform(input.begin(), input.end(), input.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+
+        bool answer;
+        
+        if (input == "yes" || input == "y") {
+            answer = true;
+        } 
+        else if (input == "no" || input == "n") {
+            answer = false;
+        } 
+        else {
+            std::cout << "Invalid input.\n" << std::endl;
+        }
+    }
+}
+
+int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12, uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096) {
+    if (!std::filesystem::exists(dbName)) {
+        std::filesystem::create_directory(dbName);
+        bool defaultValueAnswer = getStringAnswer("Do you want to use default values or define your own values? (yes/no) ");
+
+        if (defaultValueAnswer) {
+            bool bTreeSearchAnswer = getStringAnswer("Do you want to use B-tree search? (yes/no)");
+
+            if (bTreeSearchAnswer) {
+                useBTreeSearch = true;
+            }
+
+            else {
+                useBTreeSearch = false;
+            }
+
+            bitsPerEntry = getIntputFromUser("Enter bits per entry: ", 1);
+            initialDirSize = getIntputFromUser("Enter initial directory size: ", 1);
+            maxDirSize = getIntputFromUser("Enter maximum directory size: ", initialDirSize); // Ensure max >= initial
+            maxNumPages = getIntputFromUser("Enter maximum number of pages: ", 1);
+
+            BufferPool * bufferPoolMake = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
+            LSMTree * lsmTreeMake = new LSMTree(bufPool, static_cast<uint64_t>(0)); // static cast done to get rid of C++ issue
+        }
+
+        else {
+            useBTreeSearch = useBTreeSearchValue;
+            bitsPerEntry = bitsPerEntryValue;
+            initialDirSize = initialDirSizeValue;
+            maxDirSize = maxDirSizeValue;
+            maxNumPages = maxNumPagesValue;
+        }
+    }
+    else {
+        std::string metaFile = dbName + "/meta.sst";
+        PageBuffer pageBuf;
+
+        BufferPool * bufPoolTemp = new BufferPool(0, 0, 0, dbName);
+        bufPoolTemp->bread(metaFile, 0, pageBuf, true);
+        bufPoolTemp->evictAllPages();
+        
+        delete bufPoolTemp;
+        bufPoolTemp = nullptr;
+
+        BufferPool * bufPoolMake = new BufferPool(pageBuf[2], pageBuf[3], pageBuf[4], dbName);
+        LSMTree * lsmTree = new LSMTree(bufPoolMake, pageBuf);
+    }
     return 0;
 };
 
-uint64_t DB::Get(uint64_t key) {
-    std::optional<uint64_t> memtableValue = memtable->getValue(key);
-
-    if (memtableValue.has_value()) {
-        return memtableValue.value();
+std::optional<uint64_t> DB::Get(uint64_t key) {
+    uint64_t res = lsmTree->Get(key);
+    if (res == TOMBSTONE) {
+        return std::nullopt;
     }
-
-    // If we get to this point, then the key doesn't exist in the memtable
-    kvPairs sstValues;
-
-    for (int sstNum = sstCount - 1; sstNum >= 0; sstNum--) {
-        sstValues = std::get<0>(
-            SST::sstSearch({key}, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName));
-        if (!sstValues.empty()) {
-            // Return value (index 1) from first KV-pair (index 0)
-            return std::get<1>(sstValues[0]);
-        }
-    }
-
-    return TOMBSTONE;
+    return res;
 }
 
 kvPairs DB::Scan(uint64_t key1, uint64_t key2) {
-    kvPairs memtablePairs = memtable->scanTree(key1, key2);
+    kvPairs resScan = lsmTree->Scan(key1, key2);
+    kvPairs finalRes;
 
-    if (memtablePairs.size() == (key2 - key1)) {
-        return memtablePairs;
-    }
+    for (auto& kv : resScan) {
+        uint64_t key = std::get<0>(kv);
+        uint64_t value = std::get<1>(kv);
 
-    std::vector<uint64_t> keysToFind;
-    size_t currIdx = 0;
-
-    for (uint64_t i = key1; i <= key2; i++) {
-        if (currIdx == memtablePairs.size() || i < std::get<0>(memtablePairs[currIdx])) {
-            keysToFind.push_back(i);
-        } else {  // i == memtableValues[currIdx][0]
-            currIdx++;
+        // Skip tombstone entries
+        if (value != TOMBSTONE) {
+            finalRes.push_back(std::make_tuple(key, value));
         }
     }
-
-    std::vector<kvPairs> allPairVectors = {
-        memtablePairs,
-    };
-
-    std::tuple<kvPairs, std::vector<uint64_t>> binSearchRet;
-
-    for (int sstNum = sstCount - 1; sstNum >= 0 && !keysToFind.empty(); sstNum--) {
-        binSearchRet =
-            SST::sstSearch(keysToFind, sstNum, sstMetadataCache[sstNum], USE_BTREE_SEARCH, bufferPool, databaseName);
-
-        allPairVectors.push_back(std::get<0>(binSearchRet));
-        keysToFind = std::get<1>(binSearchRet);
-    }
-
-    std::sort(allPairVectors.begin(), allPairVectors.end(), [](kvPairs a, kvPairs b) { return a.size() < b.size(); });
-
-    mergeSort(&allPairVectors);
-
-    return allPairVectors[0];
+    return finalRes;
 }
 
 int DB::Put(uint64_t key, uint64_t value) {
-    if (value == TOMBSTONE) {
-        return 1;
-    }
-    bool success = memtable->insert(key, value);
-
-    if (memtable->isThresholdReached()) {
-        std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata =
-            memtable->flushToDiskBTree(SST_PATH(sstCount));
-        sstMetadataCache.push_back(sstMetadata);
-        sstCount++;
-    }
-
-    return !success;  // 0 for success, 1 for failure
+    lsmTree->Put(key, value);
+    return 0;
 };
 
 int DB::Delete(uint64_t key) {
-    bool successfulDelete = memtable->insert(key, TOMBSTONE);
-    if (successfulDelete) {
-        return 0;
-    }
-    return 1;
+    lsmTree->Put(key, TOMBSTONE);
+    return 0;
 }
 
 int DB::Close() {
-    if (!memtable->isEmpty()) {
-        memtable->flushToDiskBTree(SST_PATH(sstCount));
-        sstCount++;
-    }
+    std::string metaFile = dbName + "/meta.sst";
+    PageBuffer pageBuf; // used for writing into meta.sst
 
-    std::ofstream metadataFile(databaseName + "/" + METADATA_FILENAME);
+    lsmTree->Close();
+    bufPool->evictAllPages();
 
-    if (metadataFile.is_open()) {
-        metadataFile << sstCount;
-        metadataFile << std::endl;
-        metadataFile.close();
-    }
+    uint64_t lsmTreeLevels = lsmTree->getNumLevels();
+    std::vector<uint64_t> lsmOccupancyLevels = lsmTree->getOccupancyLevels();
 
-    delete memtable;
-    delete bufferPool;
-    sstMetadataCache.clear();
-    sstCount = 0;
+    // NOTE the structure of meta.sst
+
+    // Indices 0 - 5 of pageBuf are as follows:
+    // 0: Whether or not this uses B tree search (stored as 0 or 1)
+    // 1: Bits per entry
+    // 2: Initial directory size
+    // 3: Maximum directory size
+    // 4: Maximum number of pages
+    // 5: number of LSM Tree levels
     
+    pageBuf[0] = static_cast<uint64_t>(useBTreeSearch);
+    pageBuf[1] = bitsPerEntry;
+    pageBuf[2] = initialDirSize;
+    pageBuf[3] = maxDirSize;
+    pageBuf[4] = maxNumPages;
+    pageBuf[5] = lsmTreeLevels;
+
+    // Then the rest of the indices of pageBuf are used for 
+    // determining the occupancy status of the LSM tree levels
+
+    for (uint64_t i = 0; i < lsmTreeLevels; i++) {
+        pageBuf[i + 6] = lsmOccupancyLevels[i]; // i + 6 for levels since pageBuf already has first 6 indices with other stuff
+    }
+
+    bufPool->bwrite(metaFile, 0, pageBuf, true); // writing into meta.sst
+
+    delete lsmTree;
+    lsmTree = nullptr;
+
+    delete bufPool;
+    bufPool = nullptr;
+
     return 0;
 };
 
