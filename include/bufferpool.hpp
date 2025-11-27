@@ -66,8 +66,9 @@ class BufferPool {
     BufferPool(size_t initialDirSize, size_t maxDirSize, size_t maxPages, std::string dbName);  // constructor
     ~BufferPool();                                                          // destructor to free memory
 
-    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes read
-    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
-    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
+    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);  // return number of bytes read
+    ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
+    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);  // return number of bytes written
+    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
     void evictAllPages(); // evicts all pages and writes dirty pages to storage
 };
