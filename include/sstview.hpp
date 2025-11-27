@@ -18,11 +18,11 @@ class SSTView {
 
     // Used for scans
     PageBuffer pageBuf;
-    uint64_t itemsRead;
+    uint64_t keysRead;
     uint64_t pageNum;
-    uint64_t pagePos;
+    uint64_t currKeyIdx;
 
-    uint64_t calcNumItemsInPage(size_t numKeys, uint64_t pageNum); 
+    uint64_t calcNumItemsInPage(uint64_t pageNum); 
     
    public:
     SSTView(BufferPool* bufPool, uint64_t sstNum);
