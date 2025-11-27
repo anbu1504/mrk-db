@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 #include "constants.hpp"
 #include "bufferpool.hpp"
 
@@ -21,4 +23,5 @@ class BloomFilter {
     void addKey(uint64_t key);
     void addMultiKeys(uint64_t* memtableData);
     bool checkKey(uint64_t key);
+    void wipePages();
 };
