@@ -7,7 +7,6 @@ class SSTWriter {
    private:
     BufferPool* bufPool;
     uint64_t sstNum;
-    uint64_t pagePos;
 
     void multiwayMergeSort(int sstNum1, int sstNum2);
     
