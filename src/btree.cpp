@@ -3,15 +3,14 @@
 #include "../include/btree.hpp"
 
 #define BRANCH_FACTOR 256
-#define LAYER_DATA_THRESHOLD 256 // Corresponds to a page's worth of layer data
+#define LAYER_DATA_THRESHOLD 256  // Corresponds to a page's worth of layer data
 
 BTree::BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset)
-  : bufPool(bufPool),
-    sstNum(sstNum),
-    numKeys(numKeys),
-    pageOffset(pageOffset)
-{
-    numLeafNodes = CALC_NUM_PAGES(numKeys * 2, UINT64_SIZE);
+    : bufPool(bufPool),
+      sstNum(sstNum),
+      numKeys(numKeys),
+      pageOffset(pageOffset),
+      numLeafNodes(CALC_NUM_PAGES(numKeys * 2, UINT64_SIZE)) {
     numInternalNodes = 1;
 
     uint64_t currLayer = CEIL_DIV(numLeafNodes, BRANCH_FACTOR);
@@ -24,8 +23,8 @@ BTree::BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pa
 uint64_t BTree::findLeafPage(uint64_t key) {
     PageBuffer pageBuf;
 
-    uint64_t currPage = pageOffset; // page corresponding to root node
-    while (currPage >= 1 + numLeafNodes) { // while not a leaf node
+    uint64_t currPage = pageOffset;         // page corresponding to root node
+    while (currPage >= 1 + numLeafNodes) {  // while not a leaf node
         bufPool->bread(sstNum, currPage, pageBuf);
         currPage = getNextBTreeNode(key, pageBuf);
     }
@@ -81,7 +80,7 @@ uint64_t BTree::createBTree(std::vector<uint64_t>* memtableData) {
             leafData.push_back(std::make_tuple(1 + leafNum, memtableData->at(lastIdxInPage)));
         }
 
-         // add the very last page, and the very last key in memdata_table
+        // add the very last page, and the very last key in memdata_table
         leafData.push_back(std::make_tuple(1 + numLeafNodes - 1, memtableData->at(memtableData->size() - 2)));
     }
 
@@ -92,7 +91,7 @@ uint64_t BTree::createBTree(std::vector<uint64_t>* memtableData) {
     std::vector<BTNodeData> childLayerData = leafData;  // list of page-nums and max-keys
     std::vector<BTNodeData> currLayerData;              // list of page-nums and max-keys
     std::vector<BTNode> currLayer;                      // list of nodes in the current layer
-    
+
     for (size_t layerNum = 0; layerNum < layerSizes.size(); layerNum++) {
         // Used to calculate the actual page number of each node
         currLayerOffset -= layerSizes[layerNum];
@@ -112,12 +111,13 @@ uint64_t BTree::createBTree(std::vector<uint64_t>* memtableData) {
     }
 }
 
-void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uint64_t childLayerSize, std::vector<BTNodeData>* currLayerData, std::vector<BTNodeData>* childLayerData) {
+void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uint64_t childLayerSize,
+                           std::vector<BTNodeData>* currLayerData, std::vector<BTNodeData>* childLayerData) {
     uint64_t minChildrenPerNode = childLayerSize / currLayerSize;
     uint64_t extraChildren = childLayerSize % currLayerSize;
 
     // Used when reading from the temp file
-    uint64_t numTempFilePagesRead = 0; 
+    uint64_t numTempFilePagesRead = 0;
     // Used when writing to the temp file
     uint64_t numTempFilePagesWritten = 0;
 
@@ -132,7 +132,6 @@ void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uin
         uint64_t finalChildMax;
 
         for (uint64_t childNum = 0; childNum < nodeChildrenCount; childNum++) {
-
             if (currChildIdx >= childLayerData->size()) {
                 loadLayerData(childLayerData, numTempFilePagesRead);
                 currChildIdx = 0;
@@ -167,7 +166,7 @@ void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uin
 
 void BTree::loadLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum) {
     layerData->clear();
-    
+
     PageBuffer pageBuf;
     bufPool->bread("temp", pageNum, pageBuf);
 

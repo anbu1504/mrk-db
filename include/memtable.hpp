@@ -50,8 +50,9 @@ class Memtable {
     Node* rotateLeft(Node* x);                                  // left rotation
     void deleteTree();                                          // helper to free memory
     void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>>* entries, Node* node, uint64_t min,
-                     uint64_t max);                                           // recurive scan
-    std::optional<uint64_t> getValueRec(Node* node, uint64_t k);              // recursive get value                              // helper for display
+                     uint64_t max);  // recurive scan
+    std::optional<uint64_t> getValueRec(
+        Node* node, uint64_t k);  // recursive get value                              // helper for display
     void inorderTraversalDelRec(std::vector<uint64_t>* entries, Node* node);  // recursive inorder traversal
     uint64_t getMax(Node* node);                                              // helper for flush
     uint64_t getMin(Node* node);                                              // helper for flush
@@ -66,7 +67,7 @@ class Memtable {
     size_t getSize();                           // get current size
     std::vector<std::tuple<uint64_t, uint64_t>> scanTree(uint64_t min, uint64_t max);  // scan method
     std::optional<uint64_t> getValue(uint64_t key);
-    Node* getRoot();            // get root of memtable
-    bool isEmpty();             // helper function for checking if empty
+    Node* getRoot();  // get root of memtable
+    bool isEmpty();   // helper function for checking if empty
     std::vector<uint64_t> inorderTraversalDel();
 };

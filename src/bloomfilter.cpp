@@ -1,4 +1,5 @@
 #include "../include/bloomfilter.hpp"
+
 #include "../external/xxhash64.h"
 
 /**
@@ -9,19 +10,15 @@ BloomFilter::BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys,
     : bufPool(bufPool),
       sstNum(sstNum),
       numKeys(numKeys),
-      pageOffset(pageOffset)
-{
-    numHashFunctions = static_cast<uint64_t>(bitsPerEntry * LN_2); // number of hash functions calculation from slides (M * ln(2))
-    totalBits = numKeys * bitsPerEntry;
-    numItems = numKeys * 2;
-}
-
+      pageOffset(pageOffset),
+      numHashFunctions(
+          static_cast<uint64_t>(bitsPerEntry * LN_2)),  // number of hash functions calculation from slides (M * ln(2))
+      totalBits(numKeys * bitsPerEntry) {}
 
 /**
  * @brief Destructor for the BloomFilter class
  */
 BloomFilter::~BloomFilter() {}
-
 
 void BloomFilter::addKey(uint64_t key) {
     PageBuffer pageBuf;
@@ -44,15 +41,11 @@ void BloomFilter::addKey(uint64_t key) {
     }
 }
 
-
-void BloomFilter::addMultiKeys(uint64_t* memtableData) {
+void BloomFilter::addMultiKeys(std::vector<uint64_t>* memtableData) {
     // since memtableData is in the form <key, value, key, value>
     // every even index will be a key
-    
-    for (uint64_t i = 0; i < numItems; i++) {
-        if (i % 2 == 0) { // even index
-            addKey(memtableData[i]);
-        }
+    for (uint64_t keyIdx = 0; keyIdx < numKeys; keyIdx++) {
+        addKey(memtableData->at(keyIdx * 2));
     }
 }
 
@@ -61,12 +54,12 @@ bool BloomFilter::checkKey(uint64_t key) {
 
     for (uint64_t hashSeed = 0; hashSeed < numHashFunctions; hashSeed++) {
         uint64_t hashValue = XXHash64::hash(&key, sizeof(uint64_t), hashSeed) % totalBits;
-        
+
         uint64_t absoluteBitNum = hashValue / UINT64_SIZE_BITS;
-        uint64_t pageNum = hashValue / UINT64S_PER_PAGE; // which page I should go to
-        uint64_t intArrive = pageNum % UINT64S_PER_PAGE; // which uint64_t should I go to
-        
-        uint64_t bitNumber = hashValue % UINT64_SIZE_BITS; // the actual bit to arrive at
+        uint64_t pageNum = hashValue / UINT64S_PER_PAGE;  // which page I should go to
+        uint64_t intArrive = pageNum % UINT64S_PER_PAGE;  // which uint64_t should I go to
+
+        uint64_t bitNumber = hashValue % UINT64_SIZE_BITS;  // the actual bit to arrive at
 
         bufPool->bread(sstNum, pageOffset + pageNum, pageBuf);
         if (!((pageBuf[intArrive] >> bitNumber) & (1ULL))) {
@@ -78,10 +71,8 @@ bool BloomFilter::checkKey(uint64_t key) {
 
 void BloomFilter::wipePages() {
     uint64_t numPages = CEIL_DIV(totalBits, PAGE_SIZE * 8);
-    PageBuffer pageBuf; 
-    
-    memset(pageBuf, 0, PAGE_SIZE);
-    
+    PageBuffer pageBuf = {0};
+
     for (uint64_t page = 0; page < numPages; page++) {
         bufPool->bwrite(sstNum, pageOffset + page, pageBuf);
     }

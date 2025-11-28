@@ -39,9 +39,9 @@ class HashMap {
 
     int insert(std::string pageName, uint64_t* page, size_t pageSize);  // 0 on success 1 on fail
     std::optional<Node*> search(std::string pageName);
-    std::optional<Node*> remove(std::string pageName);  
-    int extendDir();                                    // 0 on success 1 on fail
-    int rehashBuckets();                                // 0 on success 1 on fail
+    std::optional<Node*> remove(std::string pageName);
+    int extendDir();      // 0 on success 1 on fail
+    int rehashBuckets();  // 0 on success 1 on fail
 
    private:
     uint64_t hashFunction(std::string key);
@@ -56,8 +56,8 @@ class BufferPool {
     HashMap::Node* evictFromBpool();
     std::string makeName(std::string filename, uint64_t pageNum);
     uint64_t clockHandle;
-    size_t initialDirSize;                                                  // Initial number of buckets in hash map
-    size_t maxDirSize;                                                      // Maximum number of buckets in hash map
+    size_t initialDirSize;  // Initial number of buckets in hash map
+    size_t maxDirSize;      // Maximum number of buckets in hash map
     size_t maxPages;
     size_t numPages;  // Maximum number of pages in buffer pool
     std::string dbName;
@@ -66,14 +66,17 @@ class BufferPool {
     void evictNode(HashMap::Node* node);
 
    public:
-    BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal, std::string dbNameVal);  // constructor
-    ~BufferPool();                                                          // destructor to free memory
+    BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal,
+               std::string dbNameVal);  // constructor
+    ~BufferPool();                      // destructor to free memory
 
-    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);  // return number of bytes read
+    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer,
+                  bool bypassCache = false);  // return number of bytes read
     ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
-    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);  // return number of bytes written
+    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer,
+                   bool bypassCache = false);  // return number of bytes written
     ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
     void bdelete(uint64_t sstNum);
-    void bdelete(std::string filename); // Evicts all pages in bufferpool of given file and deletes the file
-    void evictAllPages(); // evicts all pages and writes dirty pages to storage
+    void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
+    void evictAllPages();                // evicts all pages and writes dirty pages to storage
 };

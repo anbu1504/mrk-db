@@ -17,13 +17,13 @@ class LSMTree {
 
     std::vector<uint64_t> levels;
     uint64_t numLevels;
-    uint64_t scaleFactor; // basically M (needs to be a constant after)
+    uint64_t scaleFactor;  // basically M (needs to be a constant after)
 
     void compaction(uint64_t sstNum1, uint64_t sstNum2);
 
    public:
     LSMTree(BufferPool* bufPool, uint64_t numLevelsValue);
-    LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf); // FIRS
+    LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf);  // FIRS
     ~LSMTree();
 
     void Put(uint64_t key, uint64_t value);

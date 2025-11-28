@@ -1,7 +1,7 @@
 #pragma once
 
-#include "constants.hpp"
 #include "bufferpool.hpp"
+#include "constants.hpp"
 
 typedef std::tuple<uint64_t, uint64_t> BTNodeData;
 // A B-Tree node, consisting of (in this order): # keys, keys vector, children vector
@@ -17,7 +17,8 @@ class BTree {
     uint64_t numLeafNodes;
 
     uint64_t getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf);
-    void constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uint64_t childLayerSize, std::vector<BTNodeData>* currLayerData, std::vector<BTNodeData>* childLayerData);
+    void constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uint64_t childLayerSize,
+                        std::vector<BTNodeData>* currLayerData, std::vector<BTNodeData>* childLayerData);
     void loadLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum);
     void writeLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum);
     void writeNode(BTNode node, uint64_t pageNum);

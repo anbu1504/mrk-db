@@ -12,7 +12,8 @@
 #include <tuple>    // Needed for std::get
 #include <utility>  // Needed for std::swap
 
-uint64_t getIntputFromUser(const std::string& prompt, uint64_t min = 1, uint64_t max = std::numeric_limits<uint64_t>::max()) {
+uint64_t getIntputFromUser(const std::string& prompt, uint64_t min = 1,
+                           uint64_t max = std::numeric_limits<uint64_t>::max()) {
     uint64_t value;
     std::string input;
 
@@ -25,7 +26,7 @@ uint64_t getIntputFromUser(const std::string& prompt, uint64_t min = 1, uint64_t
         input.erase(input.find_last_not_of(" \t\n\r") + 1);
 
         std::stringstream ss(input);
-        if (ss >> value && !(ss >> input)) { // Successful conversion and nothing extra
+        if (ss >> value && !(ss >> input)) {  // Successful conversion and nothing extra
             if (value >= min && value <= max) {
                 return value;
             } else {
@@ -47,27 +48,27 @@ bool getStringAnswer(const std::string& prompt) {
         input.erase(0, input.find_first_not_of(" \t\n\r"));
         input.erase(input.find_last_not_of(" \t\n\r") + 1);
 
-        std::transform(input.begin(), input.end(), input.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
+        std::transform(input.begin(), input.end(), input.begin(), [](unsigned char c) { return std::tolower(c); });
 
         bool answer;
-        
+
         if (input == "yes" || input == "y") {
             answer = true;
-        } 
-        else if (input == "no" || input == "n") {
+        } else if (input == "no" || input == "n") {
             answer = false;
-        } 
-        else {
+        } else {
             std::cout << "Invalid input.\n" << std::endl;
         }
     }
 }
 
-int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12, uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096, uint64_t memtableThresholdValue = 16384) {
+int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12,
+             uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096,
+             uint64_t memtableThresholdValue = 16384) {
     if (!std::filesystem::exists(dbName)) {
         std::filesystem::create_directory(dbName);
-        bool defaultValueAnswer = getStringAnswer("Do you want to use default values or define your own values? (yes/no) ");
+        bool defaultValueAnswer =
+            getStringAnswer("Do you want to use default values or define your own values? (yes/no) ");
 
         if (defaultValueAnswer) {
             bool bTreeSearchAnswer = getStringAnswer("Do you want to use B-tree search? (yes/no)");
@@ -82,12 +83,13 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
 
             bitsPerEntry = getIntputFromUser("Enter bits per entry: ", 1);
             initialDirSize = getIntputFromUser("Enter initial directory size: ", 1);
-            maxDirSize = getIntputFromUser("Enter maximum directory size: ", initialDirSize); // Ensure max >= initial
+            maxDirSize = getIntputFromUser("Enter maximum directory size: ", initialDirSize);  // Ensure max >= initial
             maxNumPages = getIntputFromUser("Enter maximum number of pages: ", 1);
             memtableThreshold = getIntputFromUser("Enter memtable threshold size: ", 1);
 
-            BufferPool * bufferPoolMake = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
-            LSMTree * lsmTreeMake = new LSMTree(bufPool, static_cast<uint64_t>(0)); // static cast done to get rid of C++ issue
+            BufferPool* bufferPoolMake = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
+            LSMTree* lsmTreeMake =
+                new LSMTree(bufPool, static_cast<uint64_t>(0));  // static cast done to get rid of C++ issue
         }
 
         else {
@@ -98,20 +100,19 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
             maxNumPages = maxNumPagesValue;
             memtableThreshold = memtableThresholdValue;
         }
-    }
-    else {
+    } else {
         std::string metaFile = dbName + "/meta.sst";
         PageBuffer pageBuf;
 
-        BufferPool * bufPoolTemp = new BufferPool(0, 0, 0, dbName);
+        BufferPool* bufPoolTemp = new BufferPool(0, 0, 0, dbName);
         bufPoolTemp->bread(metaFile, 0, pageBuf, true);
         bufPoolTemp->evictAllPages();
-        
+
         delete bufPoolTemp;
         bufPoolTemp = nullptr;
 
-        BufferPool * bufPoolMake = new BufferPool(pageBuf[2], pageBuf[3], pageBuf[4], dbName);
-        LSMTree * lsmTree = new LSMTree(bufPoolMake, pageBuf);
+        BufferPool* bufPoolMake = new BufferPool(pageBuf[2], pageBuf[3], pageBuf[4], dbName);
+        LSMTree* lsmTree = new LSMTree(bufPoolMake, pageBuf);
     }
     return 0;
 };
@@ -152,7 +153,7 @@ int DB::Delete(uint64_t key) {
 
 int DB::Close() {
     std::string metaFile = dbName + "/meta.sst";
-    PageBuffer pageBuf; // used for writing into meta.sst
+    PageBuffer pageBuf;  // used for writing into meta.sst
 
     lsmTree->Close();
     bufPool->evictAllPages();
@@ -169,7 +170,7 @@ int DB::Close() {
     // 3: Maximum directory size
     // 4: Maximum number of pages
     // 5: number of LSM Tree levels
-    
+
     pageBuf[0] = static_cast<uint64_t>(useBTreeSearch);
     pageBuf[1] = bitsPerEntry;
     pageBuf[2] = initialDirSize;
@@ -177,14 +178,15 @@ int DB::Close() {
     pageBuf[4] = maxNumPages;
     pageBuf[5] = lsmTreeLevels;
 
-    // Then the rest of the indices of pageBuf are used for 
+    // Then the rest of the indices of pageBuf are used for
     // determining the occupancy status of the LSM tree levels
 
     for (uint64_t i = 0; i < lsmTreeLevels; i++) {
-        pageBuf[i + 6] = lsmOccupancyLevels[i]; // i + 6 for levels since pageBuf already has first 6 indices with other stuff
+        pageBuf[i + 6] =
+            lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
     }
 
-    bufPool->bwrite(metaFile, 0, pageBuf, true); // writing into meta.sst
+    bufPool->bwrite(metaFile, 0, pageBuf, true);  // writing into meta.sst
 
     delete lsmTree;
     lsmTree = nullptr;
@@ -194,4 +196,3 @@ int DB::Close() {
 
     return 0;
 };
-

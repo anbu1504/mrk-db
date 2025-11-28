@@ -1,16 +1,15 @@
 #pragma once
 
-#include <optional>
 #include <iostream>
-#include <string>
-#include <sstream>
 #include <limits>
+#include <optional>
+#include <sstream>
+#include <string>
 
 #include "bufferpool.hpp"
 #include "constants.hpp"
 #include "globals.hpp"
 #include "lsmtree.hpp"
-
 
 /**
  * @class DB
@@ -35,7 +34,9 @@ class DB {
      * @param dbName Name of the database to open/create (if it doesn't already exist)
      */
 
-    int Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue, uint64_t memtableThresholdValue);
+    int Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue,
+             uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue,
+             uint64_t memtableThresholdValue);
 
     /**
      * @brief Stores a key associated with a value.
@@ -62,7 +63,7 @@ class DB {
 
     /**
      * @brief Deletes a key-value pair based on the key
-     * 
+     *
      * @param key The key in question who's key value pair should be deleted
      */
 

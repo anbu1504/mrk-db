@@ -1,11 +1,9 @@
 #pragma once
 
 #include "../include/sstview.hpp"
-    
+
 SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)
-  : bufPool(bufPool),
-    sstNum(sstNum),
-    pageBuf() { // Is this initialization correct?
+    : bufPool(bufPool), sstNum(sstNum), pageBuf() {  // Is this initialization correct?
 
     PageBuffer pagebuf;
     bufPool->bread(sstNum, 0, pageBuf);
@@ -52,7 +50,7 @@ void SSTView::findPage(uint64_t key) {
 
     bufPool->bread(sstNum, pageNum, pageBuf);
     itemsRead = calcNumItemsInPage(pageNum);
-    keysRead = itemsRead / 2; // itemsRead should not be 0!!!
+    keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
 
     currKeyIdx = binSearch(0, keysRead - 1, [&](uint64_t m) {
         return (key < pageBuf[m * 2]) ? -1 : (key > pageBuf[m * 2]) ? 1 : 0;
@@ -71,10 +69,9 @@ uint64_t SSTView::calcNumItemsInPage(uint64_t pageNum) {
 
     if (currPageNum == numPages - 1) {
         size_t itemsLastPage = numItems % UINT64S_PER_PAGE;
-        if (itemsLastPage == 0) { // 0
+        if (itemsLastPage == 0) {  // 0
             return UINT64S_PER_PAGE;
-        }
-        else {
+        } else {
             return itemsLastPage;
         }
     }
@@ -93,7 +90,7 @@ void SSTView::fastFwd(uint64_t key) {
             pageNum++;
             bufPool->bread(sstNum, pageNum, pageBuf);
             itemsRead = calcNumItemsInPage(pageNum);
-            keysRead = itemsRead / 2; // itemsRead should not be 0!!!
+            keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
 
             currKeyIdx = 0;
         }
@@ -102,10 +99,6 @@ void SSTView::fastFwd(uint64_t key) {
     }
 }
 
-uint64_t SSTView::getCurrKey() {
-    return pageBuf[currKeyIdx * 2];
-}
+uint64_t SSTView::getCurrKey() { return pageBuf[currKeyIdx * 2]; }
 
-uint64_t SSTView::getCurrValue() {
-    return pageBuf[(currKeyIdx * 2) + 1];
-}
+uint64_t SSTView::getCurrValue() { return pageBuf[(currKeyIdx * 2) + 1]; }

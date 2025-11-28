@@ -1,9 +1,9 @@
 #pragma once
 
-#include "constants.hpp"
-#include "bufferpool.hpp"
 #include "bloomfilter.hpp"
 #include "btree.hpp"
+#include "bufferpool.hpp"
+#include "constants.hpp"
 #include "globals.hpp"
 
 class SSTView {
@@ -22,8 +22,8 @@ class SSTView {
     uint64_t pageNum;
     uint64_t currKeyIdx;
 
-    uint64_t calcNumItemsInPage(uint64_t pageNum); 
-    
+    uint64_t calcNumItemsInPage(uint64_t pageNum);
+
    public:
     SSTView(BufferPool* bufPool, uint64_t sstNum);
 

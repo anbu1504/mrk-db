@@ -1,7 +1,9 @@
 #pragma once
 
-#include "constants.hpp"
+#include "bloomfilter.hpp"
+#include "btree.hpp"
 #include "bufferpool.hpp"
+#include "constants.hpp"
 
 class SSTWriter {
    private:
@@ -9,9 +11,9 @@ class SSTWriter {
     uint64_t sstNum;
 
     void multiwayMergeSort(int sstNum1, int sstNum2);
-    
+
    public:
-    SSTWriter(BufferPool * bufferPool, uint64_t sstNum);
+    SSTWriter(BufferPool* bufPool, uint64_t sstNum);
     void writeMiniSST(std::vector<uint64_t>* memtableData);
     void mergeSSTs(uint64_t sstNum1, uint64_t sstNum2);
 };

@@ -2,8 +2,8 @@
 
 #include <cstring>
 
-#include "constants.hpp"
 #include "bufferpool.hpp"
+#include "constants.hpp"
 #include "globals.hpp"
 
 class BloomFilter {
@@ -14,14 +14,13 @@ class BloomFilter {
     uint64_t pageOffset;
     uint64_t numHashFunctions;
     uint64_t totalBits;
-    uint64_t numItems;
 
    public:
     BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
     ~BloomFilter();
 
     void addKey(uint64_t key);
-    void addMultiKeys(uint64_t* memtableData);
+    void addMultiKeys(std::vector<uint64_t>* memtableData);
     bool checkKey(uint64_t key);
     void wipePages();
 };
