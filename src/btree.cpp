@@ -107,9 +107,9 @@ uint64_t BTree::createBTree(std::vector<uint64_t>* memtableData) {
     }
 
     // TODO: remember to delete the temp file here if memtableData was empty!!
-    // if (!memtableData->empty()) {
-    //     bufPool-bdelete("temp");
-    // }
+    if (!memtableData->empty()) {
+        bufPool->bdelete("temp");
+    }
 }
 
 void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uint64_t childLayerSize, std::vector<BTNodeData>* currLayerData, std::vector<BTNodeData>* childLayerData) {
