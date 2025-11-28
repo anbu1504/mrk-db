@@ -17,7 +17,6 @@ class BloomFilter {
 
    public:
     BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
-    ~BloomFilter();
 
     void addKey(uint64_t key);
     void addMultiKeys(std::vector<uint64_t>* memtableData);

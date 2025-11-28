@@ -15,11 +15,6 @@ BloomFilter::BloomFilter(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys,
           static_cast<uint64_t>(bitsPerEntry * LN_2)),  // number of hash functions calculation from slides (M * ln(2))
       totalBits(numKeys * bitsPerEntry) {}
 
-/**
- * @brief Destructor for the BloomFilter class
- */
-BloomFilter::~BloomFilter() {}
-
 void BloomFilter::addKey(uint64_t key) {
     PageBuffer pageBuf;
 
