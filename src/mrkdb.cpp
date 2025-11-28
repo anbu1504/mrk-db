@@ -64,7 +64,7 @@ bool getStringAnswer(const std::string& prompt) {
     }
 }
 
-int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12, uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096) {
+int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12, uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096, uint64_t memtableThresholdValue = 16384) {
     if (!std::filesystem::exists(dbName)) {
         std::filesystem::create_directory(dbName);
         bool defaultValueAnswer = getStringAnswer("Do you want to use default values or define your own values? (yes/no) ");
@@ -84,6 +84,7 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
             initialDirSize = getIntputFromUser("Enter initial directory size: ", 1);
             maxDirSize = getIntputFromUser("Enter maximum directory size: ", initialDirSize); // Ensure max >= initial
             maxNumPages = getIntputFromUser("Enter maximum number of pages: ", 1);
+            memtableThreshold = getIntputFromUser("Enter memtable threshold size: ", 1);
 
             BufferPool * bufferPoolMake = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
             LSMTree * lsmTreeMake = new LSMTree(bufPool, static_cast<uint64_t>(0)); // static cast done to get rid of C++ issue
@@ -95,6 +96,7 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
             initialDirSize = initialDirSizeValue;
             maxDirSize = maxDirSizeValue;
             maxNumPages = maxNumPagesValue;
+            memtableThreshold = memtableThresholdValue;
         }
     }
     else {

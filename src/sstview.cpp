@@ -105,3 +105,7 @@ void SSTView::fastFwd(uint64_t key) {
 uint64_t SSTView::getCurrKey() {
     return pageBuf[currKeyIdx * 2];
 }
+
+uint64_t SSTView::getCurrValue() {
+    return pageBuf[(currKeyIdx * 2) + 1];
+}

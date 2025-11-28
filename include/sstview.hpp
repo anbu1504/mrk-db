@@ -31,4 +31,5 @@ class SSTView {
     void findPage(uint64_t key);
     void fastFwd(uint64_t key);
     uint64_t getCurrKey();
+    uint64_t getCurrValue();
 };

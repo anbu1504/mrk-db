@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "bufferpool.hpp"
 #include "constants.hpp"
 #include "memtable.hpp"
@@ -17,7 +19,7 @@ class LSMTree {
     uint64_t numLevels;
     uint64_t scaleFactor; // basically M (needs to be a constant after)
 
-    int compaction(uint64_t sstNum1, uint64_t sstNum2);
+    void compaction(uint64_t sstNum1, uint64_t sstNum2);
 
    public:
     LSMTree(BufferPool* bufPool, uint64_t numLevelsValue);

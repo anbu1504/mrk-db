@@ -11,15 +11,6 @@
 #include "globals.hpp"
 #include "lsmtree.hpp"
 
-#define MEMTABLE_THRESHOLD 16384
-#define USE_BTREE_SEARCH true
-
-#define BITS_PER_ENTRY 12
-#define NUM_HASH_FUNCS 8
-
-#define INITIAL_DIR_SIZE 4
-#define MAX_DIR_SIZE 64
-#define MAX_NUM_PAGES 4096
 
 /**
  * @class DB
@@ -44,7 +35,7 @@ class DB {
      * @param dbName Name of the database to open/create (if it doesn't already exist)
      */
 
-    int Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue);
+    int Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue, uint64_t memtableThresholdValue);
 
     /**
      * @brief Stores a key associated with a value.
