@@ -16,7 +16,7 @@
 
 #define CEIL_DIV(x, y) ((x) / (y) + ((x) % (y) != 0))
 #define PRINT(x) (std::cout << x << std::endl)
-#define SST_PATH(x) (databaseName + "/" + std::to_string(x) + ".sst")
+#define SST_PATH(x) (dbName + "/" + x + ".sst")
 #define CALC_NUM_PAGES(num_items, item_size) (CEIL_DIV((num_items) * (item_size), PAGE_SIZE))
 #define SST_TEMP_NUM(s) (UINT64_MAX - 1 - (s))
 
