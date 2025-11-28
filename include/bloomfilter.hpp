@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstring>
-
 #include "bufferpool.hpp"
 #include "constants.hpp"
 #include "globals.hpp"

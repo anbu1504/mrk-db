@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "bufferpool.hpp"
 #include "constants.hpp"
 #include "memtable.hpp"

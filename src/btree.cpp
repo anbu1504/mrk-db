@@ -1,5 +1,7 @@
 #include "../include/btree.hpp"
 
+#include <utility>  // Needed for std::swap
+
 #define BRANCH_FACTOR 256
 #define LAYER_DATA_THRESHOLD 256  // Corresponds to a page's worth of layer data
 
