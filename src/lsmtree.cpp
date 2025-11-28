@@ -125,9 +125,9 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
 }
 
 void LSMTree::Close() {
-    // if (memtable->isEmpty()) {
-    //     return;
-    // }
+    if (memtable->isEmpty()) {
+        return;
+    }
 
     if (levels[1] == 0) {
         SSTWriter sw(bufPool, 1);
