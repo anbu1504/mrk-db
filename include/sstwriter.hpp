@@ -10,7 +10,10 @@ class SSTWriter {
     BufferPool* bufPool;
     uint64_t sstNum;
 
-    void multiwayMergeSort(int sstNum1, int sstNum2);
+    // Sorts the keys in sstNum1 and sstNum2 and writes them
+    // to the file corresponding to sstNum, from page offset 1
+    // Returns the number of keys in the new SST
+    uint64_t multiwayMergeSort(int sstNum1, int sstNum2);
 
    public:
     SSTWriter(BufferPool* bufPool, uint64_t sstNum);

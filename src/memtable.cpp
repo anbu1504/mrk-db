@@ -1,15 +1,5 @@
 #include "../include/memtable.hpp"
 
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <optional>
-
 /**
  * @brief Constructor to initialize the memtable with a size threshold.
  */

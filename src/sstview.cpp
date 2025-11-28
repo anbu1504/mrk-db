@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../include/sstview.hpp"
 
 SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)

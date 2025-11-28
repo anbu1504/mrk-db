@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../include/btree.hpp"
 
 #define BRANCH_FACTOR 256
