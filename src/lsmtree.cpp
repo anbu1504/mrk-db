@@ -9,30 +9,22 @@ LSMTree::LSMTree(BufferPool* bufPool, uint64_t numLevelsValue)
     levels.resize(numLevels, 0);
 }
 
-// LSMTree::LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf)
-//     : bufPool(bufPool),
-//       memtable(new Memtable(ENTRIES_PER_PAGE)),
-//       scaleFactor(SCALE_FACTOR)
-// {
+LSMTree::LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf)
+    : bufPool(bufPool),
+      memtable(new Memtable(ENTRIES_PER_PAGE)),
+      scaleFactor(SCALE_FACTOR)
+{
+    this->numLevels = metadataPageBuf[5];
 
-//     uint64_t offset = 0;
-//     auto readU64 = [&](uint64_t &out) {
-//         std::memcpy(&out, metadataPageBuf + offset, sizeof(uint64_t));
-//         offset += sizeof(uint64_t);
-//     };
-//
-//     readU64(numLevels);
+    levels.clear();
+    levels.resize(this->numLevels);
 
-//     
-//     levels.clear();
-//     levels.reserve(numLevels);
-
-//     for (uint64_t i = 0; i < numLevels; ++i) {
-//         uint64_t count;
-//         readU64(count);
-//         levels.push_back(count);
-//     }
-// }
+    for (uint64_t i = 0; i < numLevels; i++) {
+        // The occupancy for level 'i' is stored at index 'i + 6' in the PageBuffer.
+        uint64_t count = metadataPageBuf[i + 6];
+        levels.push_back(count);
+    }
+}
 
 
 LSMTree::~LSMTree() {
@@ -172,6 +164,7 @@ void LSMTree::compaction(uint64_t sstNum1, uint64_t sstNum2) {
     SSTWriter sw(bufPool, SST_TEMP_NUM(sstNum2)); // sstNum2 is assumed to be the largest number
 
     sw.mergeSSTs(sstNum1, sstNum2);
-
+    bufPool->bdelete(sstNum1);
+    bufPool->bdelete(sstNum2);
 
 }
