@@ -66,9 +66,6 @@ int DB::Delete(uint64_t key) {
 }
 
 int DB::Close() {
-    lsmTree->Close();
-    bufPool->evictAllPages();
-
     uint64_t lsmTreeLevels = lsmTree->getNumLevels();
     std::vector<uint64_t> lsmOccupancyLevels = lsmTree->getOccupancyLevels();
 
@@ -98,7 +95,10 @@ int DB::Close() {
             lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
     }
 
-    bufPool->bwrite("meta", 0, pageBuf, true);  // writing into meta.sst
+    bufPool->bwrite("meta", 0, pageBuf);  // writing into meta.sst
+
+    lsmTree->Close();
+    bufPool->evictAllPages();
 
     delete lsmTree;
     lsmTree = nullptr;
