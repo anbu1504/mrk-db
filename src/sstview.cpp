@@ -40,40 +40,19 @@ void SSTView::findPage(uint64_t key) {
         pageNum = binSearch(lo, hi, [&](uint64_t m) {
             bufPool->bread(sstNum, m, pageBuf);
             // page num and total items needed for helper function
-            itemsRead = calcNumItemsInPage(m);
+            itemsRead = calcNumItemsInPage(numKeys, m);
 
             return (key < pageBuf[0]) ? -1 : (key > pageBuf[itemsRead - 2]) ? 1 : 0;
         });
     }
 
     bufPool->bread(sstNum, pageNum, pageBuf);
-    itemsRead = calcNumItemsInPage(pageNum);
+    itemsRead = calcNumItemsInPage(numKeys, pageNum);
     keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
 
     currKeyIdx = binSearch(0, keysRead - 1, [&](uint64_t m) {
         return (key < pageBuf[m * 2]) ? -1 : (key > pageBuf[m * 2]) ? 1 : 0;
     });
-}
-
-// number of pages = ceil(total entries / entries in a page)
-// if not last page, return entries in a page (entries in a page is actually keys in a page so we have to x2)
-// if last page is not full, then return total entries % entries in a page
-// if last page is full (i.e. modulo returns 0), then return entries in a page
-// pageNum MUST BE >= 1!!
-uint64_t SSTView::calcNumItemsInPage(uint64_t pageNum) {
-    uint64_t currPageNum = pageNum - 1;
-    size_t numItems = 2 * numKeys;
-    uint64_t numPages = CALC_NUM_PAGES(numKeys * 2, UINT64_SIZE);
-
-    if (currPageNum == numPages - 1) {
-        size_t itemsLastPage = numItems % UINT64S_PER_PAGE;
-        if (itemsLastPage == 0) {  // 0
-            return UINT64S_PER_PAGE;
-        } else {
-            return itemsLastPage;
-        }
-    }
-    return UINT64S_PER_PAGE;
 }
 
 // Fast-forward currKeyIdx until getCurrKey() >= key
@@ -87,7 +66,7 @@ void SSTView::fastFwd(uint64_t key) {
         if (currKeyIdx >= keysRead) {
             pageNum++;
             bufPool->bread(sstNum, pageNum, pageBuf);
-            itemsRead = calcNumItemsInPage(pageNum);
+            itemsRead = calcNumItemsInPage(numKeys, pageNum);
             keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
 
             currKeyIdx = 0;

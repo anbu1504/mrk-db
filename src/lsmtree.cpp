@@ -41,15 +41,16 @@ void LSMTree::Put(uint64_t key, uint64_t value) {
             SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
             std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
             sw.writeMiniSST(&memtableData);
-            candidateLevel++;  // start loop at next level
 
             while (levels[candidateLevel] == 1) {
-                SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
-                compaction(candidateLevel, SST_TEMP_NUM(candidateLevel));  // merging 2 sst's
+                uint64_t sstNumNew = candidateLevel + 1;
+                if (levels[sstNumNew] == 1){
+                    sstNumNew = SST_TEMP_NUM(sstNumNew);
+                }
+                SSTWriter sw(bufPool, sstNumNew);
+                compaction(SST_TEMP_NUM(candidateLevel), candidateLevel);  // merging 2 sst's
                 candidateLevel++;
             }
-            // sw.writeMiniSST(&memtableData);
-            // compaction(candidateLevel, candidateLevel + 1); // merging 2 sst's
         }
     }
 }
