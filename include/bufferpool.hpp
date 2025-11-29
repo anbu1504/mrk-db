@@ -14,8 +14,8 @@ class HashMap {
         uint64_t* page;
         Node* next;
         bool accessBit;
-        bool dirtyBit;
         size_t pageSize;
+        bool dirtyBit;
 
         Node(std::string name, uint64_t* p, size_t size)
             : pageName(name), page(p), next(nullptr), accessBit(true), pageSize(size), dirtyBit(false) {}
@@ -64,7 +64,7 @@ class BufferPool {
     HashMap::Node* searchPage(std::string pageName);
     HashMap::Node* addPage(std::string pageName, uint64_t* buffer);
     void evictNode(HashMap::Node* node);
-    void BufferPool::compactClockVector();
+    void compactClockVector();
 
    public:
     BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal,

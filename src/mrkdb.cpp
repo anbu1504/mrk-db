@@ -1,11 +1,14 @@
 #include "../include/mrkdb.hpp"
 
 #include <filesystem>
+#include <cassert>
+#include <iostream>
 
-int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12,
-             uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096,
-             uint64_t memtableThresholdValue = 16384) {
+int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue,
+             uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue,
+             uint64_t memtableThresholdValue) {
     if (std::filesystem::create_directory(dbName)) {
+        std::cout << "hello" << std::endl;
         useBTreeSearch = useBTreeSearchValue;
         bitsPerEntry = bitsPerEntryValue;
         initialDirSize = initialDirSizeValue;
@@ -14,8 +17,9 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
         memtableThreshold = memtableThresholdValue;
 
         bufPool = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
-        lsmTree = new LSMTree(bufPool, static_cast<uint64_t>(0));  // static cast done to get rid of C++ issue
+        lsmTree = new LSMTree(bufPool);
     } else {
+        std::cout << "hello there" << std::endl;
         PageBuffer pageBuf;
 
         BufferPool* bufPoolTemp = new BufferPool(0, 0, 0, dbName);
@@ -25,8 +29,17 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t
         delete bufPoolTemp;
         bufPoolTemp = nullptr;
 
+
+        std::vector<uint64_t> levels;
+
+        uint64_t levelsSize = pageBuf[5];
+        for (uint64_t i = 0; i < levelsSize; i++) {
+            // The occupancy for level 'i' is stored at index 'i + 6' in the PageBuffer.
+            uint64_t count = pageBuf[i + 6];
+            levels.push_back(count);
+        }
         bufPool = new BufferPool(pageBuf[2], pageBuf[3], pageBuf[4], dbName);
-        lsmTree = new LSMTree(bufPool, pageBuf);
+        lsmTree = new LSMTree(bufPool, levels);
     }
     return 0;
 };
@@ -66,8 +79,8 @@ int DB::Delete(uint64_t key) {
 }
 
 int DB::Close() {
-    uint64_t lsmTreeLevels = lsmTree->getNumLevels();
     std::vector<uint64_t> lsmOccupancyLevels = lsmTree->getOccupancyLevels();
+    uint64_t lsmTreeLevels = lsmOccupancyLevels.size();
 
     // NOTE the structure of meta.sst
 
@@ -94,8 +107,9 @@ int DB::Close() {
         pageBuf[i + 6] =
             lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
     }
-
+    PRINT("before bwrite");
     bufPool->bwrite("meta", 0, pageBuf);  // writing into meta.sst
+    PRINT("after bwrite");
 
     lsmTree->Close();
     bufPool->evictAllPages();

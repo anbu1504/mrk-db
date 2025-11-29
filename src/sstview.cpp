@@ -3,12 +3,12 @@
 SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)
     : bufPool(bufPool), sstNum(sstNum), pageBuf() {  // Is this initialization correct?
 
-    PageBuffer pagebuf;
-    bufPool->bread(sstNum, 0, pageBuf);
+    PageBuffer metadataPageBuf;
+    bufPool->bread(sstNum, 0, metadataPageBuf);
 
-    numKeys = pagebuf[0];
-    minKey = pagebuf[1];
-    maxKey = pagebuf[2];
+    numKeys = metadataPageBuf[0];
+    minKey = metadataPageBuf[1];
+    maxKey = metadataPageBuf[2];
 }
 
 bool SSTView::checkForKey(uint64_t key) {
@@ -29,7 +29,7 @@ void SSTView::findPage(uint64_t key) {
     uint64_t numFilterPages = CEIL_DIV(numKeys * bitsPerEntry, PAGE_SIZE * 8);
 
     if (useBTreeSearch) {
-        BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numLeafPages);
+        BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
         pageNum = bTree.findLeafPage(key);
     } else {
         // Binary search variables

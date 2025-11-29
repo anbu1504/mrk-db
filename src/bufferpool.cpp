@@ -112,12 +112,12 @@ void HashMap::rehashBucket(DirEntry* dirEntry) {
 
         uint64_t maskedHashPage = hashedPageName & mask;
 
-        DirEntry* newEntry = directory[maskedHashPage];
+        DirEntry* currEntry = directory[maskedHashPage];
 
         Node* tempNext = chainCurrent->next;
 
         chainCurrent->next = nullptr;
-        insertNodeToBucket(chainCurrent, newEntry);
+        insertNodeToBucket(chainCurrent, currEntry);
         chainCurrent = tempNext;
     }
 }
@@ -237,15 +237,22 @@ std::optional<HashMap::Node*> HashMap::remove(std::string pageName) {
  * @brief Constructor for the BufferPool class
  */
 
-BufferPool::BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal, std::string dbNameVal)
-    : initialDirSize(initialDirSizeVal),
+BufferPool::BufferPool(size_t initialDirSizeVal,
+                       size_t maxDirSizeVal,
+                       size_t maxPagesVal,
+                       std::string dbNameVal)
+    : hashMap(new HashMap(initialDirSizeVal, maxDirSizeVal)),
+      clockVector(),
+      clockHandle(0),
+      initialDirSize(initialDirSizeVal),
       maxDirSize(maxDirSizeVal),
       maxPages(maxPagesVal),
       numPages(0),
-      hashMap(new HashMap(initialDirSizeVal, maxDirSizeVal)),
-      clockHandle(0) {
+      dbName(dbNameVal)
+{
     clockVector.resize(maxPagesVal);
-};
+}
+
 
 /**
  * @brief Destructor for the BufferPool class
@@ -292,7 +299,12 @@ HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer) {
     hashMap->insert(pageName, buffer, PAGE_SIZE);
 
     if (evictedNode) {
-        clockVector[clockHandle - 1] = pageName;
+        if (clockHandle == 0) {
+            clockVector[maxPages - 1] = pageName;    
+        }
+        else {
+            clockVector[clockHandle - 1] = pageName;
+        }
     } else {
         clockVector[numPages] = pageName;
     }
@@ -322,6 +334,7 @@ HashMap::Node* BufferPool::evictFromBpool() {
             clockVector[clockHandle] = "";
         }
         clockHandle = (clockHandle + 1) % numPages;
+        currPageName = clockVector[clockHandle];
     }
 
     return currNode;
@@ -358,11 +371,11 @@ void BufferPool::evictNode(HashMap::Node* node){
     delete node;
 }
 
-ssize_t BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false){
+ssize_t BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer, bool bypassCache){
     return bread(std::to_string(sstNum), pageNum, buffer, bypassCache);
 }
 
-ssize_t BufferPool::bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false) {
+ssize_t BufferPool::bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache) {
     std::string pageName = makeName(filename, pageNum);
     HashMap::Node* readNode = searchPage(pageName);
 
@@ -423,7 +436,7 @@ ssize_t BufferPool::bwrite(std::string filename, uint64_t pageNum, PageBuffer bu
         return PAGE_SIZE;
     }
     else {
-        memcpy(buffer, writeNode->page, PAGE_SIZE);
+        memcpy(writeNode->page, buffer, PAGE_SIZE);
         writeNode->dirtyBit = true;
         return PAGE_SIZE;
     }
@@ -436,6 +449,10 @@ void BufferPool::evictAllPages() {
         evictNode(currNode);
         numPages = numPages - 1;
     }
+}
+
+void BufferPool::bdelete(uint64_t sstNum) {
+    bdelete(std::to_string(sstNum));
 }
 
 void BufferPool::bdelete(std::string filename){

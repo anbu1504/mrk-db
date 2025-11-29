@@ -1,10 +1,11 @@
 #include <cassert>
 #include <iostream>
+#include <filesystem>
 
 #include "../include/mrkdb.hpp"
 
-#define MEMTABLE_SST_FILENAME "0.sst"
-#define METADATA_FILENAME ".metadata"
+#define METADATA_FILENAME "meta.sst"
+#define THRESHOLD 16384
 
 class DBTester {
    public:
@@ -44,13 +45,13 @@ class DBTester {
         db.Put(key2, val2);
         db.Put(key3, val3);
 
-        uint64_t res1 = db.Get(key1);
-        uint64_t res2 = db.Get(key2);
-        uint64_t res3 = db.Get(key3);
+        auto res1 = db.Get(key1);
+        auto res2 = db.Get(key2);
+        auto res3 = db.Get(key3);
 
-        assert(res1 == 100);
-        assert(res2 == 200);
-        assert(res3 == 300);
+        assert(res1.value() == 100);
+        assert(res2.value() == 200);
+        assert(res3.value() == 300);
 
         std::cout << "DB::Get() for memtable test passed!" << std::endl;
 
@@ -73,13 +74,13 @@ class DBTester {
             j++;
         }
 
-        uint64_t val1 = db.Get(1);
-        uint64_t val2 = db.Get(2);
-        uint64_t val3 = db.Get(3);
+        auto val1 = db.Get(1);
+        auto val2 = db.Get(2);
+        auto val3 = db.Get(3);
 
-        assert(val1 == 1);
-        assert(val2 == 2);
-        assert(val3 == 3);
+        assert(val1.value() == 1);
+        assert(val2.value() == 2);
+        assert(val3.value() == 3);
 
         std::cout << "DB::Get() for sst test passed!" << std::endl;
 
@@ -102,23 +103,23 @@ class DBTester {
             j++;
         }
 
-        uint64_t val1 = db.Get(1);
-        uint64_t val2 = db.Get(THRESHOLD + 2);
-        uint64_t val3 = db.Get((2 * THRESHOLD) + 2);
-        uint64_t val4 = db.Get((3 * THRESHOLD) + 23);
-        uint64_t val5 = db.Get((4 * THRESHOLD) + 24);
-        uint64_t val6 = db.Get((5 * THRESHOLD) + 30);
-        uint64_t val7 = db.Get((6 * THRESHOLD) + 41);
-        uint64_t val8 = db.Get((7 * THRESHOLD) + 55);
+        auto val1 = db.Get(1);
+        auto val2 = db.Get(THRESHOLD + 2);
+        auto val3 = db.Get((2 * THRESHOLD) + 2);
+        auto val4 = db.Get((3 * THRESHOLD) + 23);
+        auto val5 = db.Get((4 * THRESHOLD) + 24);
+        auto val6 = db.Get((5 * THRESHOLD) + 30);
+        auto val7 = db.Get((6 * THRESHOLD) + 41);
+        auto val8 = db.Get((7 * THRESHOLD) + 55);
 
-        assert(val1 == 1);
-        assert(val2 == THRESHOLD + 2);
-        assert(val3 == (2 * THRESHOLD) + 2);
-        assert(val4 == (3 * THRESHOLD) + 23);
-        assert(val5 == (4 * THRESHOLD) + 24);
-        assert(val6 == (5 * THRESHOLD) + 30);
-        assert(val7 == (6 * THRESHOLD) + 41);
-        assert(val8 == (7 * THRESHOLD) + 55);
+        assert(val1.value() == 1);
+        assert(val2.value() == THRESHOLD + 2);
+        assert(val3.value() == (2 * THRESHOLD) + 2);
+        assert(val4.value() == (3 * THRESHOLD) + 23);
+        assert(val5.value() == (4 * THRESHOLD) + 24);
+        assert(val6.value() == (5 * THRESHOLD) + 30);
+        assert(val7.value() == (6 * THRESHOLD) + 41);
+        assert(val8.value() == (7 * THRESHOLD) + 55);
 
         std::cout << "DB::GetSSTDeeper() for sst test deeper passed!" << std::endl;
 
@@ -551,16 +552,11 @@ class DBTester {
             db.Put(i, j);
             j++;
         }
-        std::vector<sstMetadata> saveState = db.sstMetadataCache;
+
         db.Close();
         DB db2;
         db2.Open(testDB);
         
-        for (size_t i = 0; i < saveState.size(); i++) {
-            assert(saveState[i] == db2.sstMetadataCache[i]);
-        }
-        
-        // assert(db2.sstMetadataCache.size() - 1 == saveState.size());
     
         // Make sure data is still there
         assert(db2.Get(1) == 1);
@@ -784,15 +780,9 @@ class DBTester {
         db.Delete((6 * THRESHOLD) + 67);
         db.Delete((7 * THRESHOLD) + 6768);
 
-        std::vector<sstMetadata> saveState = db.sstMetadataCache;
-
         db.Close();
         DB db2;
         db2.Open(testDB);
-
-        for (size_t i = 0; i < saveState.size(); i++) {
-            assert(saveState[i] == db2.sstMetadataCache[i]);
-        }
 
         auto res1 = db2.Get((4 * THRESHOLD) + 23);
         auto res2 = db2.Get((5 * THRESHOLD) + 999);

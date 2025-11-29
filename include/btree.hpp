@@ -27,5 +27,5 @@ class BTree {
     BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pageOffset);
 
     uint64_t findLeafPage(uint64_t key);
-    uint64_t createBTree(std::vector<uint64_t>* memtableData);
+    void createBTree(std::vector<uint64_t>* memtableData);
 };

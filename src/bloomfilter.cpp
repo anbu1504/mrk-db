@@ -50,7 +50,6 @@ bool BloomFilter::checkKey(uint64_t key) {
     for (uint64_t hashSeed = 0; hashSeed < numHashFunctions; hashSeed++) {
         uint64_t hashValue = XXHash64::hash(&key, sizeof(uint64_t), hashSeed) % totalBits;
 
-        uint64_t absoluteBitNum = hashValue / UINT64_SIZE_BITS;
         uint64_t pageNum = hashValue / UINT64S_PER_PAGE;  // which page I should go to
         uint64_t intArrive = pageNum % UINT64S_PER_PAGE;  // which uint64_t should I go to
 

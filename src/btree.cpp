@@ -60,7 +60,7 @@ uint64_t BTree::getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf) {
     return pageBuf[startOfChildren + mid];
 }
 
-uint64_t BTree::createBTree(std::vector<uint64_t>* memtableData) {
+void BTree::createBTree(std::vector<uint64_t>* memtableData) {
     std::vector<uint64_t> layerSizes = {
         CEIL_DIV(numLeafNodes, BRANCH_FACTOR),
     };  // the sizes of each internal layer, bottom-up

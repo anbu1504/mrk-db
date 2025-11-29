@@ -1,57 +1,52 @@
 #include "../include/lsmtree.hpp"
 
-LSMTree::LSMTree(BufferPool* bufPool, uint64_t numLevelsValue)
+LSMTree::LSMTree(BufferPool* bufPool)
     : bufPool(bufPool),
       memtable(new Memtable(ENTRIES_PER_PAGE)),
-      numLevels(numLevelsValue),
-      scaleFactor(SCALE_FACTOR),
-      levels(numLevelsValue, 0) {}
+      levels(1, 0),
+      scaleFactor(SCALE_FACTOR) {}
 
-LSMTree::LSMTree(BufferPool* bufPool, PageBuffer metadataPageBuf)
-    : bufPool(bufPool), memtable(new Memtable(ENTRIES_PER_PAGE)), scaleFactor(SCALE_FACTOR) {
-    this->numLevels = metadataPageBuf[5];
-
-    levels.clear();
-    levels.resize(this->numLevels);
-
-    for (uint64_t i = 0; i < numLevels; i++) {
-        // The occupancy for level 'i' is stored at index 'i + 6' in the PageBuffer.
-        uint64_t count = metadataPageBuf[i + 6];
-        levels.push_back(count);
-    }
-}
+LSMTree::LSMTree(BufferPool* bufPool, std::vector<uint64_t> levels)
+    : bufPool(bufPool), memtable(new Memtable(ENTRIES_PER_PAGE)), levels(levels), scaleFactor(SCALE_FACTOR) {}
 
 LSMTree::~LSMTree() { delete memtable; }
+
+void LSMTree::flushHelper() {
+    if (levels.size() > 1 && levels[1] == 1) { // at least 1 level
+        uint64_t candidateLevel = 1;
+
+        SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
+        std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
+        sw.writeMiniSST(&memtableData);
+        
+        while (levels.size() > candidateLevel && levels[candidateLevel] == 1) {
+            uint64_t sstNumNew = candidateLevel + 1;
+            if (levels[sstNumNew] == 1) {
+                sstNumNew = SST_TEMP_NUM(sstNumNew); // create compacted sst as temp{sst}
+            }
+            SSTWriter sw(bufPool, sstNumNew);
+            if (candidateLevel + 1 == levels.size()) {
+                levels.push_back(static_cast<uint64_t>(0));
+            }
+            compaction(SST_TEMP_NUM(candidateLevel), candidateLevel);  // merging 2 sst's
+            levels[candidateLevel] = 0;
+            levels[candidateLevel + 1] = 1;
+            candidateLevel++;
+        }
+    }
+    
+    else {
+        SSTWriter sw(bufPool, 1);
+        std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
+        sw.writeMiniSST(&memtableData);
+    }
+}
 
 void LSMTree::Put(uint64_t key, uint64_t value) {
     memtable->insert(key, value);
 
     if (memtable->isThresholdReached()) {
-        // SSTWriter sstWriter(bufPool, );
-        // check if there's an SST at level 1, if so then compact
-
-        if (levels[1] == 0) {
-            SSTWriter sw(bufPool, 1);
-            std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
-            sw.writeMiniSST(&memtableData);
-        }
-
-        else {
-            uint64_t candidateLevel = 1;
-            SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
-            std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
-            sw.writeMiniSST(&memtableData);
-
-            while (levels[candidateLevel] == 1) {
-                uint64_t sstNumNew = candidateLevel + 1;
-                if (levels[sstNumNew] == 1){
-                    sstNumNew = SST_TEMP_NUM(sstNumNew);
-                }
-                SSTWriter sw(bufPool, sstNumNew);
-                compaction(SST_TEMP_NUM(candidateLevel), candidateLevel);  // merging 2 sst's
-                candidateLevel++;
-            }
-        }
+        flushHelper();
     }
 }
 
@@ -61,7 +56,7 @@ uint64_t LSMTree::Get(uint64_t key) {
         return getValue.value();
     }
 
-    for (uint64_t level = 0; level < numLevels; level++) {
+    for (uint64_t level = 0; level < levels.size(); level++) {
         if (levels[level] == 0) {
             continue;
         }
@@ -82,12 +77,13 @@ uint64_t LSMTree::Get(uint64_t key) {
             return sv.getCurrValue();
         }
     }
+    return TOMBSTONE; // if not found return TOMBSTONE
 }
 
 kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
     kvPairs output;
 
-    for (uint64_t level = 0; level < numLevels; level++) {
+    for (uint64_t level = 0; level < levels.size(); level++) {
         if (levels[level] == 0) {
             continue;
         }
@@ -121,31 +117,8 @@ void LSMTree::Close() {
     if (memtable->isEmpty()) {
         return;
     }
-
-    if (levels[1] == 0) {
-        SSTWriter sw(bufPool, 1);
-        std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
-        sw.writeMiniSST(&memtableData);
-    }
-
-    else {
-        uint64_t candidateLevel = 1;
-        SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
-        std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
-        sw.writeMiniSST(&memtableData);
-        candidateLevel++;  // start loop at next level
-
-        while (levels[candidateLevel] == 1) {
-            SSTWriter sw(bufPool, SST_TEMP_NUM(candidateLevel));
-            compaction(candidateLevel, SST_TEMP_NUM(candidateLevel));  // merging 2 sst's
-            candidateLevel++;
-        }
-        // sw.writeMiniSST(&memtableData);
-        // compaction(candidateLevel, candidateLevel + 1); // merging 2 sst's
-    }
+    flushHelper();
 }
-
-uint64_t LSMTree::getNumLevels() { return numLevels; }
 
 std::vector<uint64_t> LSMTree::getOccupancyLevels() { return levels; }
 

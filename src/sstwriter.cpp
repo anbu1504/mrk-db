@@ -19,7 +19,7 @@ void SSTWriter::writeMiniSST(std::vector<uint64_t>* memtableData) {
     uint64_t numFilterPages = CEIL_DIV(numKeys * bitsPerEntry, PAGE_SIZE * 8);
 
     uint64_t itemsInLastPage = memtableData->size() % UINT64S_PER_PAGE;
-    for (int pageNum = 1; pageNum <= numLeafPages; pageNum++) {
+    for (uint64_t pageNum = 1; pageNum <= numLeafPages; pageNum++) {
         std::vector<uint64_t>::iterator copyBegin = memtableData->begin() + (pageNum - 1) * UINT64S_PER_PAGE;
         std::vector<uint64_t>::iterator copyEnd =  // For the last page, use memtableData->end() instead
             (pageNum < numLeafPages) ? memtableData->begin() + pageNum * UINT64S_PER_PAGE : memtableData->end();
