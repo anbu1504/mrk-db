@@ -84,3 +84,24 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
     std::vector<uint64_t> emptyVec;
     bTree.createBTree(&emptyVec);
 }
+
+uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
+    PageBuffer metadataPageBufOne;
+    PageBuffer metadataPageBufTwo;
+
+    uint64_t numKeysSSTOne;
+    uint64_t numKeysSSTTwo;
+
+    ssize_t bytesReadOne = bufPool->bread(sstNum1, 0, metadataPageBufOne, false); // page 0 for metadata page
+    numKeysSSTOne = metadataPageBufOne[0]; // first index holds the number of keys
+
+    ssize_t bytesReadTwo = bufPool->bread(sstNum2, 0, metadataPageBufTwo, false); // page 0 for metadata page
+    numKeysSSTTwo = metadataPageBufTwo[0]; // first index holds the number of keys
+
+    // Metadata for tracking when to stop loop
+    uint64_t numPagesOne = CALC_NUM_PAGES(numKeysSSTOne * 2, sizeof(uint64_t));
+    uint64_t numPagesTwo = CALC_NUM_PAGES(numKeysSSTTwo * 2, sizeof(uint64_t));
+
+    
+
+}
