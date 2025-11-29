@@ -185,6 +185,9 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
                 currPageNumOne++;
                 itemsInPageOne = calcNumItemsInPage(numKeysOne, currPageNumOne);
             } 
+        }
+
+        if (currKeyIndTwo == itemsInPageTwo){
             if (currPageNumTwo == numPagesTwo - 1){
                 fileTwoEmpty = true;
             } else {
