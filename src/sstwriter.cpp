@@ -86,22 +86,141 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
 }
 
 uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
+    // Assuming sstNum1 is the newer sst
     PageBuffer metadataPageBufOne;
     PageBuffer metadataPageBufTwo;
 
-    uint64_t numKeysSSTOne;
-    uint64_t numKeysSSTTwo;
+    uint64_t numKeysOne;
+    uint64_t numKeysTwo;
 
-    ssize_t bytesReadOne = bufPool->bread(sstNum1, 0, metadataPageBufOne, false); // page 0 for metadata page
-    numKeysSSTOne = metadataPageBufOne[0]; // first index holds the number of keys
+    bufPool->bread(sstNum1, 0, metadataPageBufOne, false); // page 0 for metadata page
+    numKeysOne = metadataPageBufOne[0]; // first index holds the number of keys
 
-    ssize_t bytesReadTwo = bufPool->bread(sstNum2, 0, metadataPageBufTwo, false); // page 0 for metadata page
-    numKeysSSTTwo = metadataPageBufTwo[0]; // first index holds the number of keys
+    bufPool->bread(sstNum2, 0, metadataPageBufTwo, false); // page 0 for metadata page
+    numKeysTwo = metadataPageBufTwo[0]; // first index holds the number of keys
 
     // Metadata for tracking when to stop loop
-    uint64_t numPagesOne = CALC_NUM_PAGES(numKeysSSTOne * 2, sizeof(uint64_t));
-    uint64_t numPagesTwo = CALC_NUM_PAGES(numKeysSSTTwo * 2, sizeof(uint64_t));
+    uint64_t numPagesOne = CALC_NUM_PAGES(numKeysOne * 2, UINT64_SIZE);
+    uint64_t numPagesTwo = CALC_NUM_PAGES(numKeysTwo * 2, UINT64_SIZE);
+    uint64_t currPageNumOne = 1;
+    uint64_t currPageNumTwo = 1;
+    uint64_t itemsInPageOne = calcNumItemsInPage(numKeysOne, 0); // used to check if we are at the end of the current buffer
+    uint64_t itemsInPageTwo = calcNumItemsInPage(numKeysTwo, 0);
+    uint64_t currKeyIndOne = 0;
+    uint64_t currKeyIndTwo = 0;
+    uint64_t totalKeys = 0;
 
+    uint64_t currKeyIndOut = 0;
+    uint64_t currPageNumOut = 1;
+
+    uint64_t currKeyIndTemp = 0;
+    uint64_t currPageNumTemp = 0;
+
+    PageBuffer bufferOneRead;
+    PageBuffer bufferTwoRead;
+    PageBuffer bufferOut;
+    PageBuffer bufferTemp; //name is just 'temp'
+
+    bool fileOneEmpty = false;
+    bool fileTwoEmpty = false;
     
+    bufPool->bread(sstNum1, currPageNumOne, bufferOneRead, false); // page 0 for metadata page
+    bufPool->bread(sstNum2, currPageNumTwo, bufferTwoRead, false); // page 0 for metadata page
+
+    bool done = false;
+
+    while (!done){
+        if (!fileOneEmpty && !fileTwoEmpty){
+            if (bufferOneRead[currKeyIndOne] <= bufferTwoRead[currKeyIndTwo]){
+                bufferOut[currKeyIndOut] = bufferOneRead[currKeyIndOne]; // Place key in output
+                bufferOut[currKeyIndOut + 1] = bufferOneRead[currKeyIndOne + 1]; // Place value in output
+                currKeyIndOne = currKeyIndOne + 2;
+                if (bufferOneRead[currKeyIndOne] == bufferTwoRead[currKeyIndTwo]){
+                    currKeyIndTwo = currKeyIndTwo + 2;
+                }
+            } else {
+                bufferOut[currKeyIndOut] = bufferTwoRead[currKeyIndTwo]; // Place key in output
+                bufferOut[currKeyIndOut + 1] = bufferTwoRead[currKeyIndTwo + 1]; // Place value in output
+                currKeyIndTwo = currKeyIndTwo + 2;
+            }   
+        } else if (fileOneEmpty){
+            bufferOut[currKeyIndOut] = bufferTwoRead[currKeyIndTwo]; // Place key in output
+            bufferOut[currKeyIndOut + 1] = bufferTwoRead[currKeyIndTwo + 1]; // Place value in output
+            currKeyIndTwo = currKeyIndTwo + 2;
+        } else if (fileTwoEmpty){
+            bufferOut[currKeyIndOut] = bufferOneRead[currKeyIndOne]; // Place key in output
+            bufferOut[currKeyIndOut + 1] = bufferOneRead[currKeyIndOne + 1]; // Place value in output
+            currKeyIndOne = currKeyIndOne + 2;
+        }
+
+        currKeyIndOut = currKeyIndOut + 2;
+        totalKeys++;
+
+        // Check output buffer, if full flush and rest params
+        if (currKeyIndOut == UINT64S_PER_PAGE){
+            bufPool->bwrite(sstNum, currPageNumOut, bufferOut);
+            currKeyIndOut = 0;
+            
+            bufferTemp[currKeyIndTemp] = currPageNumOut;
+            bufferTemp[currKeyIndTemp + 1] = bufferOut[currKeyIndOut - 2];
+            currKeyIndTemp = currKeyIndTemp + 2;
+
+            if (currKeyIndTemp == UINT64S_PER_PAGE){
+                bufPool->bwrite("temp", currPageNumTemp, bufferTemp);
+                currKeyIndTemp = 0;
+                currPageNumTemp++;
+            }
+            currPageNumOut++;
+        }
+
+        // Check both input buffers, if either are at the end, read in next page
+        // If at end and no more pages left, what to do? 
+        // Done if both files are empty (done reading)
+        if (currKeyIndOne == itemsInPageOne){
+            if (currPageNumOne == numPagesOne - 1){
+                fileOneEmpty = true;
+            } else {
+                bufPool->bread(sstNum1, currPageNumOne, bufferOneRead, false);
+                currKeyIndOne = 0;
+                currPageNumOne++;
+                itemsInPageOne = calcNumItemsInPage(numKeysOne, currPageNumOne);
+            } 
+            if (currPageNumTwo == numPagesTwo - 1){
+                fileTwoEmpty = true;
+            } else {
+                bufPool->bread(sstNum2, currPageNumTwo, bufferTwoRead, false);
+                currKeyIndTwo = 0;
+                currPageNumTwo++;
+                itemsInPageTwo = calcNumItemsInPage(numKeysTwo, currPageNumTwo);
+            } 
+        }
+
+        if (fileOneEmpty && fileTwoEmpty){
+            done = true;
+        }
+    }
+
+    if (currKeyIndOut > 0){
+        if (currKeyIndOut != UINT64S_PER_PAGE){
+            std::fill(bufferOut + currKeyIndOut, bufferOut + UINT64S_PER_PAGE, 0);
+        }
+        bufPool->bwrite(sstNum, currPageNumOut, bufferOut);
+        currKeyIndOut = 0;
+            
+        bufferTemp[currKeyIndTemp] = currPageNumOut;
+        bufferTemp[currKeyIndTemp + 1] = bufferOut[currKeyIndOut - 2];
+        currKeyIndTemp = currKeyIndTemp + 2;
+
+        if (currKeyIndTemp != UINT64S_PER_PAGE){
+            std::fill(bufferTemp + currKeyIndTemp, bufferTemp + UINT64S_PER_PAGE, 0);
+        }
+        bufPool->bwrite("temp", currPageNumTemp, bufferTemp);
+        currKeyIndTemp = 0;
+        currPageNumTemp++;
+
+        currPageNumOut++;
+    }
+
+    return totalKeys;
 
 }
