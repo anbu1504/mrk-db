@@ -64,6 +64,7 @@ class BufferPool {
     HashMap::Node* searchPage(std::string pageName);
     HashMap::Node* addPage(std::string pageName, uint64_t* buffer);
     void evictNode(HashMap::Node* node);
+    void BufferPool::compactClockVector();
 
    public:
     BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal,
@@ -73,9 +74,8 @@ class BufferPool {
     ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer,
                   bool bypassCache = false);  // return number of bytes read
     ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
-    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer,
-                   bool bypassCache = false);  // return number of bytes written
-    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
+    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
+    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
     void bdelete(uint64_t sstNum);
     void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
     void evictAllPages();                // evicts all pages and writes dirty pages to storage
