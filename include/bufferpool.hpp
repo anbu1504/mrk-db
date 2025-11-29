@@ -37,7 +37,7 @@ class HashMap {
     HashMap(size_t initial, size_t maxDirSize);  // constructor with initial size
     ~HashMap();                                  // destructor to free memory
 
-    int insert(std::string pageName, uint64_t* page, size_t pageSize);  // 0 on success 1 on fail
+    int insert(std::string pageName, uint64_t* page, size_t pageSize, bool setDirty);  // 0 on success 1 on fail
     std::optional<Node*> search(std::string pageName);
     std::optional<Node*> remove(std::string pageName);
     int extendDir();      // 0 on success 1 on fail
@@ -62,7 +62,7 @@ class BufferPool {
     size_t numPages;  // Maximum number of pages in buffer pool
     std::string dbName;
     HashMap::Node* searchPage(std::string pageName);
-    HashMap::Node* addPage(std::string pageName, uint64_t* buffer);
+    HashMap::Node* addPage(std::string pageName, uint64_t* buffer, bool setDirty);
     void evictNode(HashMap::Node* node);
     void compactClockVector();
 

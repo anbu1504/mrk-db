@@ -136,7 +136,7 @@ int HashMap::extendDir() {
     return 0;
 }
 
-int HashMap::insert(std::string pageName, uint64_t* page, size_t pageSize) {
+int HashMap::insert(std::string pageName, uint64_t* page, size_t pageSize, bool setDirty) {
     uint64_t hashedPageName = hashFunction(pageName);
     uint64_t mask = (1ULL << numBitsUsed) - 1;
 
@@ -144,6 +144,9 @@ int HashMap::insert(std::string pageName, uint64_t* page, size_t pageSize) {
 
     DirEntry* dirEntry = directory[maskedHashPage];
     Node* insertNode = new Node(pageName, page, pageSize);
+    if (setDirty){
+        insertNode->dirtyBit = true;
+    }
 
     if (dirEntry->chainSize >= size_t(bucketOverflowThreshold)) {
         if (dirEntry->numHashedDigits < numBitsUsed) {
@@ -287,7 +290,7 @@ void BufferPool::compactClockVector(){
 }
 
 // Return Value: Buffer of evicted page (or nullptr)
-HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer) {
+HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer, bool setDirty) {
     // Assert that this page is not in bufferpool already?
     HashMap::Node* evictedNode = nullptr;
 
@@ -296,7 +299,7 @@ HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer) {
         numPages = numPages - 1;
     }
 
-    hashMap->insert(pageName, buffer, PAGE_SIZE);
+    hashMap->insert(pageName, buffer, PAGE_SIZE, setDirty);
 
     if (evictedNode) {
         if (clockHandle == 0) {
@@ -346,13 +349,16 @@ std::string BufferPool::makeName(std::string filename, uint64_t pageNum) {
 
 void BufferPool::evictNode(HashMap::Node* node){
     if (node->dirtyBit){
+        PRINT("In evictNode and dirtybit true");
         std::string pageName = node->pageName;
         size_t underScorePos = pageName.find('_');
         std::string filename = pageName.substr(0, underScorePos);
         std::string pageNumStr = pageName.substr(underScorePos + 1);
+        PRINT(filename);
+        PRINT(pageNumStr);
         int pageNum = std::stoi(pageNumStr);
 
-        int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_DIRECT, 0644);
+        int fd = open(SST_PATH(filename).c_str(), O_WRONLY | O_CREAT | O_DIRECT, 0644);
         if (fd == -1) {
             close(fd);
             throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
@@ -398,7 +404,7 @@ ssize_t BufferPool::bread(std::string filename, uint64_t pageNum, PageBuffer buf
                 memset(bufferHeap + bytesRead, 0, PAGE_SIZE - bytesRead);
             }
 
-            HashMap::Node* evictedNode = addPage(pageName, bufferHeap);
+            HashMap::Node* evictedNode = addPage(pageName, bufferHeap, false);
 
             if (evictedNode) {
                 evictNode(evictedNode);
@@ -427,7 +433,7 @@ ssize_t BufferPool::bwrite(std::string filename, uint64_t pageNum, PageBuffer bu
         uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(PAGE_SIZE));
         memcpy(bufferHeap, buffer, PAGE_SIZE);
 
-        HashMap::Node* evictedNode = addPage(pageName, bufferHeap);
+        HashMap::Node* evictedNode = addPage(pageName, bufferHeap, true);
 
         if (evictedNode) {
             evictNode(evictedNode);
@@ -445,7 +451,10 @@ ssize_t BufferPool::bwrite(std::string filename, uint64_t pageNum, PageBuffer bu
 void BufferPool::evictAllPages() {
     HashMap::Node *currNode;
     while (numPages > 0) {
+        PRINT("In evictAllPages and in loop");
         currNode = evictFromBpool();
+        PRINT(currNode->dirtyBit);
+        PRINT(currNode->pageName);
         evictNode(currNode);
         numPages = numPages - 1;
     }
