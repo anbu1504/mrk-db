@@ -6,6 +6,7 @@ EXECUTABLE = mrkdb_tests
 BUILD_DIR = build
 SRC_DIR = src
 TEST_DIR = tests
+TEST_DB = testdb
 INCLUDE_DIR = include
 
 LIB_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
@@ -35,4 +36,4 @@ $(BUILD_DIR)/mrkdb_tests.o: $(TEST_DIR)/mrkdb_tests.cpp
 .PHONY: all clean
 
 clean:
-	rm -rf $(BUILD_DIR) $(EXECUTABLE)
+	rm -rf $(BUILD_DIR) $(EXECUTABLE) $(TEST_DB)
