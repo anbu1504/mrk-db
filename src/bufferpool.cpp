@@ -8,7 +8,7 @@
 BufferPool::BufferPool(std::string dbNameVal) : dbName(dbNameVal) {}
 BufferPool::~BufferPool() {}
 
-void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache = false) {
+void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache) {
     int fd = open(SST_PATH(sstNum), O_RDONLY);
     pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
     close(fd);
