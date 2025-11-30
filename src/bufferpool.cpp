@@ -2,9 +2,11 @@
 
 #include "../external/xxhash64.h"
 
+#include <cstring>
 #include <unistd.h>
 #include <sys/fcntl.h>
 
+#define PAGE_ID(s, p) (std::to_string(s) + "_" + std::to_string(p))
 #define SST_PATH(x) ((dbName + "/" + std::to_string(x) + ".sst").c_str())
 
 HPage::HPage(std::string pageID, bool dirtyBit, bool refBit, uint64_t probeSeqLen, uint64_t* cachedPage)
@@ -21,7 +23,7 @@ void HPage::reset() {
     }
 };
 
-BufferPool::BufferPool(std::string dbNameVal) : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
+BufferPool::BufferPool(std::string dbName) : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
 
 BufferPool::~BufferPool() {
     for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
@@ -31,20 +33,20 @@ BufferPool::~BufferPool() {
 
 // ========== PUBLIC METHODS ==========
 
-void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache = false) {
-    HPage* cachedHPage = cacheGet(sstNum + "_" + pageNum);
+void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache) {
+    HPage* cachedHPage = cacheGet(PAGE_ID(sstNum, pageNum));
     if (!bypassCache || cachedHPage) {
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
     } else {
         int fd = open(SST_PATH(sstNum), O_RDONLY);
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
-        cachePut(sstNum + "_" + pageNum, pageBuf, false);
+        cachePut(PAGE_ID(sstNum, pageNum), pageBuf, false);
     }
 }
 
 void BufferPool::bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf) {
-    cachePut(sstNum + "_" + pageNum, pageBuf, true);
+    cachePut(PAGE_ID(sstNum, pageNum), pageBuf, true);
 }
 
 void BufferPool::bdelete(uint64_t sstNum) {
