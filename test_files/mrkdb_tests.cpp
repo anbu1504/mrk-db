@@ -17,7 +17,7 @@ class DBTester {
         db.Close();
 
         assert(std::filesystem::exists(testDB));
-        assert(std::filesystem::exists(testDB + "/" + METADATA_FILENAME));
+        assert(std::filesystem::exists(testDB + "/" + std::to_string(METADATA_NUM)) + ".sst");
 
         std::cout << "DB::Open() test passed!" << std::endl;
 
@@ -117,15 +117,14 @@ class DBTester {
         DB db;
         db.Open(testDB);
 
-        uint64_t j = 0;
         for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
-            db.Put(i, j);
-            j++;
+            db.Put(i, i);
         }
 
         PRINT("done putting");
 
         auto val1 = db.Get(1);
+        assert(val1.value() == 1);
         auto val2 = db.Get(THRESHOLD + 2);
         auto val3 = db.Get((2 * THRESHOLD) + 2);
         auto val4 = db.Get((3 * THRESHOLD) + 23);
@@ -134,9 +133,8 @@ class DBTester {
         auto val7 = db.Get((6 * THRESHOLD) + 41);
         auto val8 = db.Get((7 * THRESHOLD) + 55);
 
-        PRINT("done getting");
-
         assert(val1.value() == 1);
+
         assert(val2.value() == THRESHOLD + 2);
         assert(val3.value() == (2 * THRESHOLD) + 2);
         assert(val4.value() == (3 * THRESHOLD) + 23);
@@ -825,8 +823,8 @@ class DBTester {
 int main() {
     DBTester tester;
 
-    // tester.testDBOpen();
-    // tester.testDBGetMemtable();
+    tester.testDBOpen();
+    tester.testDBGetMemtable();
     tester.testDBGetSST();
     tester.testDBGetSSTDeeper();
     tester.testDBGetEmptyMemtable();

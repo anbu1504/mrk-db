@@ -4,8 +4,7 @@
 #include <cassert>
 #include <iostream>
 
-int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue,
-             uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t cacheSizeValue,
+int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t cacheSizeValue,
              uint64_t memtableThresholdValue) {
     if (std::filesystem::create_directory(dbName)) {
         useBTreeSearch = useBTreeSearchValue;
@@ -30,10 +29,10 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
 
         std::vector<uint64_t> levels;
 
-        uint64_t levelsSize = pageBuf[5];
+        uint64_t levelsSize = pageBuf[3];
         for (uint64_t i = 0; i < levelsSize; i++) {
             // The occupancy for level 'i' is stored at index 'i + 6' in the PageBuffer.
-            uint64_t count = pageBuf[i + 6];
+            uint64_t count = pageBuf[i + 4];
             levels.push_back(count);
         }
         bufPool = new BufferPool(dbName);
@@ -95,15 +94,15 @@ int DB::Close() {
     pageBuf[1] = bitsPerEntry;
     // pageBuf[2] = initialDirSize;
     // pageBuf[3] = maxDirSize;
-    pageBuf[4] = cacheSize;
-    pageBuf[5] = lsmTreeLevels;
+    pageBuf[2] = cacheSize;
+    pageBuf[3] = lsmTreeLevels;
 
     // Then the rest of the indices of pageBuf are used for
     // determining the occupancy status of the LSM tree levels
 
     for (uint64_t i = 0; i < lsmTreeLevels; i++) {
-        pageBuf[i + 6] =
-            lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
+        pageBuf[i + 4] =
+            lsmOccupancyLevels[i];  // i + 4 for levels since pageBuf already has first 6 indices with other stuff
     }
     bufPool->bwrite(METADATA_NUM, 0, pageBuf);  // writing into meta.sst
 

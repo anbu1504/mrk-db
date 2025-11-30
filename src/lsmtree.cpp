@@ -69,13 +69,12 @@ uint64_t LSMTree::Get(uint64_t key) {
         else {
             uint64_t sstNum = level;  // since memtable is level 0
             SSTView sv(bufPool, sstNum);
-
             if (!sv.checkForKey(key)) {
                 continue;
             }
             sv.findPage(key);
             sv.fastFwd(key);
-
+            
             if (sv.getCurrKey() != key) {
                 continue;
             }

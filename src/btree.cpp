@@ -23,7 +23,7 @@ BTree::BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pa
 uint64_t BTree::findLeafPage(uint64_t key) {
     PageBuffer pageBuf;
 
-    uint64_t currPage = pageOffset;         // page corresponding to root node
+    uint64_t currPage = pageOffset;         // page corresponding to root node    
     while (currPage >= 1 + numLeafNodes) {  // while not a leaf node
         bufPool->bread(sstNum, currPage, pageBuf);
         currPage = getNextBTreeNode(key, pageBuf);
@@ -33,6 +33,7 @@ uint64_t BTree::findLeafPage(uint64_t key) {
 }
 
 uint64_t BTree::getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf) {
+    
     uint64_t numKeysInNode = pageBuf[0];
     uint64_t startOfChildren = 1 + numKeysInNode;
 
@@ -56,7 +57,6 @@ uint64_t BTree::getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf) {
     uint64_t mid = binSearch(lo, hi, [&](int m) {
         return (currKey <= pageBuf[m]) ? -1 : (currKey > pageBuf[1 + m]) ? 1 : 0;
     });  // Else case: pageBuf[mid] < currKey && currKey <= pageBuf[1 + mid]
-
     return pageBuf[startOfChildren + mid];
 }
 
@@ -148,7 +148,6 @@ void BTree::constructLayer(uint64_t currLayerOffset, uint64_t currLayerSize, uin
             childrenVec.push_back(std::get<0>(currChild));
             currChildIdx++;
         }
-
         writeNode(std::make_tuple(nodeChildrenCount - 1, keysVec, childrenVec), currLayerOffset + nodeNum);
         currLayerData->push_back(std::make_tuple(currLayerOffset + nodeNum, finalChildMax));
 
@@ -171,7 +170,7 @@ void BTree::loadLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum) 
     bufPool->bread(LAYER_DATA_NUM, pageNum, pageBuf);
 
     for (uint64_t nodeDataIdx = 0; nodeDataIdx < UINT64S_PER_PAGE / 2; nodeDataIdx++) {
-        layerData->push_back(std::make_tuple(pageBuf[nodeDataIdx], pageBuf[nodeDataIdx + 1]));
+        layerData->push_back(std::make_tuple(pageBuf[nodeDataIdx * 2], pageBuf[nodeDataIdx * 2 + 1]));
     }
 }
 
@@ -188,11 +187,28 @@ void BTree::writeLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum)
     layerData->clear();
 }
 
+void printBTNode(const BTNode& node) {
+    uint64_t numKeys = std::get<0>(node);
+    const auto& keys = std::get<1>(node);
+    const auto& children = std::get<2>(node);
+
+    std::cout << "printBTNode numKeys = " << numKeys << "\n";
+
+    std::cout << "printBTNode keys: ";
+    for (uint64_t k : keys)
+        std::cout << k << " ";
+    std::cout << "\n";
+
+    std::cout << "printBTNode children: ";
+    for (uint64_t c : children)
+        std::cout << c << " ";
+    std::cout << "\n";
+}
+
 void BTree::writeNode(BTNode node, uint64_t pageNum) {
     PageBuffer pageBuf = {0};
     pageBuf[0] = std::get<0>(node);
     std::copy(std::get<1>(node).begin(), std::get<1>(node).end(), pageBuf + 1);
     std::copy(std::get<2>(node).begin(), std::get<2>(node).end(), pageBuf + 1 + std::get<1>(node).size());
-
     bufPool->bwrite(sstNum, pageNum, pageBuf);
 }

@@ -35,7 +35,7 @@ void SSTWriter::writeMiniSST(std::vector<uint64_t>* memtableData) {
 
     BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
     bloomFilter.wipePages();
-    bloomFilter.addMultiKeys(memtableData);
+    // bloomFilter.addMultiKeys(memtableData); // TODO: NEED TO UNCOMMENT BLOOM FILTER STUFF AND ADD O_DIRECT
 
     BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
     bTree.createBTree(memtableData);
@@ -73,7 +73,7 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
         if (currKeyIdx == numKeys - 1) {
             maxKey = currKey;
         }
-        bloomFilter.addKey(currKey);
+        // bloomFilter.addKey(currKey); // TODO: NEED TO UNCOMMENT BLOOM FILTER STUFF AND ADD O_DIRECT
     }
 
     std::fill(pageBuf, pageBuf + UINT64S_PER_PAGE, 0);
