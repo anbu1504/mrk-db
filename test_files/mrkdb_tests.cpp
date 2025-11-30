@@ -17,7 +17,7 @@ class DBTester {
         db.Close();
 
         assert(std::filesystem::exists(testDB));
-        assert(std::filesystem::exists(testDB + "/" + std::to_string(METADATA_NUM)) + ".sst");
+        assert(std::filesystem::exists(testDB + "/" + std::to_string(METADATA_NUM) + ".sst"));
 
         std::cout << "DB::Open() test passed!" << std::endl;
 

@@ -35,7 +35,7 @@ BufferPool::~BufferPool() {
 
 void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache) {
     HPage* cachedHPage = cacheGet(PAGE_ID(sstNum, pageNum));
-    if (!bypassCache || cachedHPage) {
+    if (!bypassCache && cachedHPage) {
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
     } else {
         int fd = open(SST_PATH(sstNum), O_RDONLY);
