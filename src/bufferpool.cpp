@@ -34,19 +34,22 @@ BufferPool::~BufferPool() {
 // ========== PUBLIC METHODS ==========
 
 void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache) {
-    HPage* cachedHPage = cacheGet(PAGE_ID(sstNum, pageNum));
-    if (!bypassCache && cachedHPage) {
-        memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
-    } else {
+    // HPage* cachedHPage = cacheGet(PAGE_ID(sstNum, pageNum));
+    // if (!bypassCache || cachedHPage) {
+    //     memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
+    // } else {
         int fd = open(SST_PATH(sstNum), O_RDONLY);
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
-        cachePut(PAGE_ID(sstNum, pageNum), pageBuf, false);
-    }
+    //     cachePut(PAGE_ID(sstNum, pageNum), pageBuf, false);
+    // }
 }
 
 void BufferPool::bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf) {
-    cachePut(PAGE_ID(sstNum, pageNum), pageBuf, true);
+    // cachePut(PAGE_ID(sstNum, pageNum), pageBuf, true);
+    int fd = open(SST_PATH(sstNum), O_RDWR | O_CREAT, 0644);
+    pwrite(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
+    close(fd);
 }
 
 void BufferPool::bdelete(uint64_t sstNum) {
@@ -54,22 +57,23 @@ void BufferPool::bdelete(uint64_t sstNum) {
     std::remove(SST_PATH(sstNum));
 
     // Scan the hashtable for entries w/ matching prefixes, and delete em
-    std::string sstString = std::to_string(sstNum);
-    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
-        // Note that string.compare() returns 0 if string starts with fileName
-        if (!(hashTable[hPageNum].pageID.compare(0, sstString.length(), sstString))) {
-            hashTable[hPageNum].reset();
-        }
-    }
+    // std::string sstString = std::to_string(sstNum);
+    // for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
+    //     // Note that string.compare() returns 0 if string starts with fileName
+    //     if (!(hashTable[hPageNum].pageID.compare(0, sstString.length(), sstString))) {
+    //         hashTable[hPageNum].reset();
+    //     }
+    // }
 
 }
 
 void BufferPool::evictAllPages() {
-    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
-        if (hashTable[hPageNum].cachedPage && hashTable[hPageNum].dirtyBit) {
-            evict(&hashTable[hPageNum]);
-        }
-    }
+    // for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
+    //     if (hashTable[hPageNum].cachedPage && hashTable[hPageNum].dirtyBit) {
+    //         evict(&hashTable[hPageNum]);
+    //     }
+    // }
+    return;
 }
 
 HPage* BufferPool::cacheGet(std::string pageID) {
@@ -147,6 +151,3 @@ void BufferPool::runClockIfFull() {
     }
     return;
 }
-
-
-    

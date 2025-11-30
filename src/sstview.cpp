@@ -13,7 +13,10 @@ SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)
 }
 
 bool SSTView::checkForKey(uint64_t key) {
+    PRINT("key in the checkForKey");
+    PRINT(key);
     if (key < minKey || key > maxKey) {
+        PRINT("key out of bounds");
         return false;
     }
 
