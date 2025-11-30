@@ -121,8 +121,6 @@ class DBTester {
             db.Put(i, i);
         }
 
-        PRINT("done putting");
-
         auto val1 = db.Get(1);
         assert(val1.value() == 1);
         auto val2 = db.Get(THRESHOLD + 2);
@@ -134,24 +132,13 @@ class DBTester {
         auto val8 = db.Get((7 * THRESHOLD) + 55);
 
         assert(val1.value() == 1);
-        PRINT("after first check");
         assert(val2.value() == THRESHOLD + 2);
-        PRINT("after second check");
-        if (!val3.has_value()) { // currently failing here
-            PRINT("val 3 has no value");
-        }
         assert(val3.value() == (2 * THRESHOLD) + 2);
-        PRINT("after third check");
         assert(val4.value() == (3 * THRESHOLD) + 23);
-        PRINT("after fourth check");
         assert(val5.value() == (4 * THRESHOLD) + 24);
-        PRINT("after fifth check");
         assert(val6.value() == (5 * THRESHOLD) + 30);
-        PRINT("after sixth check");
         assert(val7.value() == (6 * THRESHOLD) + 41);
-        PRINT("after seventh check");
         assert(val8.value() == (7 * THRESHOLD) + 55);
-        PRINT("after eighth check");
 
         std::cout << "DB::GetSSTDeeper() for sst test deeper passed!" << std::endl;
 
@@ -159,7 +146,7 @@ class DBTester {
         std::filesystem::remove_all(testDB);
     }
 
-    void testDBGetEmptyMemtable() {
+    void testDBGetNonExistentMemtable() {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
@@ -182,15 +169,15 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(key4);
 
-        assert(res1 == TOMBSTONE);
+        assert(res1 == std::nullopt);
 
-        std::cout << "DB::GetEmpty() for memtable test passed!" << std::endl;
+        std::cout << "DB::GetNonExistent() for memtable test passed!" << std::endl;
 
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
 
-    void testDBGetEmptySST() {
+    void testDBGetNonExistentSST() {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
@@ -207,15 +194,15 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(2 * THRESHOLD);
 
-        assert(res1 == TOMBSTONE);
+        assert(res1 == std::nullopt);
 
-        std::cout << "DB::GetEmptySST() for sst test passed!" << std::endl;
+        std::cout << "DB::GetNonExistentSST() for sst test passed!" << std::endl;
 
         // Cleanup
         std::filesystem::remove_all(testDB);
     }
 
-    void testDBGetEmptySSTDeeper() {
+    void testDBGetNonExistentSSTDeeper() {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
@@ -232,9 +219,9 @@ class DBTester {
 
         std::optional<uint64_t> res1 = db.Get(5 * THRESHOLD);
 
-        assert(res1 == TOMBSTONE);
+        assert(res1 == std::nullopt);
 
-        std::cout << "DB::GetEmptySSTDeeper() for sst test passed!" << std::endl;
+        std::cout << "DB::GetNonExistentSSTDeeper() for sst test passed!" << std::endl;
 
         // Cleanup
         std::filesystem::remove_all(testDB);
@@ -261,7 +248,6 @@ class DBTester {
         db.Put(key3, val3);
 
         kvPairs res1 = db.Scan(key1, key3);
-
         assert(res1.size() == 3);
 
         {
@@ -837,9 +823,9 @@ int main() {
     tester.testDBGetMemtable();
     tester.testDBGetSST();
     tester.testDBGetSSTDeeper();
-    tester.testDBGetEmptyMemtable();
-    tester.testDBGetEmptySST();
-    tester.testDBGetEmptySSTDeeper();
+    tester.testDBGetNonExistentMemtable();
+    tester.testDBGetNonExistentSST();
+    tester.testDBGetNonExistentSSTDeeper();
     tester.testDBPut();
     tester.testDBCloseFully();
     tester.testDBScanMemtable();
