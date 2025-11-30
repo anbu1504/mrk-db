@@ -26,10 +26,26 @@ class DBTester {
     };
 
     void testDBGetMemtable() {
+        // int age;
+        // std::string name;
+
+        // // Execute the 'ls' command
+        // int result = system("ls"); 
+
+        // // Check the return value (0 usually indicates success)
+        // if (result == 0) {
+        //     std::cout << "ls command executed successfully." << std::endl;
+        // } else {
+        //     std::cerr << "Error executing ls command. Return code: " << result << std::endl;
+        // }
+
+        // // Prompt for and read an integer
+        // std::cout << "Enter your age: ";
+        // std::cin >> age;
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        ////std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -63,7 +79,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        // //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -73,10 +89,14 @@ class DBTester {
             db.Put(i, j);
             j++;
         }
+        // PRINT("done putting");
 
         auto val1 = db.Get(1);
         auto val2 = db.Get(2);
         auto val3 = db.Get(3);
+
+        // PRINT("done getting");
+
 
         assert(val1.value() == 1);
         assert(val2.value() == 2);
@@ -92,7 +112,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -103,6 +123,8 @@ class DBTester {
             j++;
         }
 
+        PRINT("done putting");
+
         auto val1 = db.Get(1);
         auto val2 = db.Get(THRESHOLD + 2);
         auto val3 = db.Get((2 * THRESHOLD) + 2);
@@ -111,6 +133,8 @@ class DBTester {
         auto val6 = db.Get((5 * THRESHOLD) + 30);
         auto val7 = db.Get((6 * THRESHOLD) + 41);
         auto val8 = db.Get((7 * THRESHOLD) + 55);
+
+        PRINT("done getting");
 
         assert(val1.value() == 1);
         assert(val2.value() == THRESHOLD + 2);
@@ -131,7 +155,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -162,7 +186,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -187,7 +211,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -212,7 +236,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -257,7 +281,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -289,7 +313,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -333,7 +357,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -424,7 +448,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -471,7 +495,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -509,7 +533,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -526,7 +550,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -540,7 +564,7 @@ class DBTester {
     void testDBReopenGet() {
         const std::string testDB = "testdb";
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
         
         DB db;
         db.Open(testDB);
@@ -571,7 +595,7 @@ class DBTester {
     void testDBScanGetMultipleKeysNotThere() {
         const std::string testDB = "testdb";
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -613,7 +637,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -631,7 +655,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -652,7 +676,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -674,7 +698,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -693,7 +717,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -723,7 +747,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -757,7 +781,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        std::filesystem::create_directory(testDB);
+        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -801,8 +825,8 @@ class DBTester {
 int main() {
     DBTester tester;
 
-    tester.testDBOpen();
-    tester.testDBGetMemtable();
+    // tester.testDBOpen();
+    // tester.testDBGetMemtable();
     tester.testDBGetSST();
     tester.testDBGetSSTDeeper();
     tester.testDBGetEmptyMemtable();

@@ -8,7 +8,6 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
              uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue,
              uint64_t memtableThresholdValue) {
     if (std::filesystem::create_directory(dbName)) {
-        std::cout << "hello" << std::endl;
         useBTreeSearch = useBTreeSearchValue;
         bitsPerEntry = bitsPerEntryValue;
         initialDirSize = initialDirSizeValue;
@@ -19,7 +18,6 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
         bufPool = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
         lsmTree = new LSMTree(bufPool);
     } else {
-        std::cout << "hello there" << std::endl;
         PageBuffer pageBuf;
 
         BufferPool* bufPoolTemp = new BufferPool(0, 0, 0, dbName);
@@ -107,9 +105,7 @@ int DB::Close() {
         pageBuf[i + 6] =
             lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
     }
-    PRINT("before bwrite");
     bufPool->bwrite("meta", 0, pageBuf);  // writing into meta.sst
-    PRINT("after bwrite");
 
     lsmTree->Close();
     bufPool->evictAllPages();

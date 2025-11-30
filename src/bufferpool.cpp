@@ -10,8 +10,19 @@
 #include <iostream>
 #include <sstream>
 #include <cstdio>
+#include <cassert>
 
 #define BUCKET_OVERFLOW_THRESHOLD 4
+
+static size_t countNonEmptyClock(const std::vector<std::string>& clockVector) {
+    size_t count = 0;
+    for (const auto& name : clockVector) {
+        if (!name.empty()) {
+            count++;
+        }
+    }
+    return count;
+}
 
 /**
  * @brief Constructor for the HashMap class
@@ -90,21 +101,42 @@ void HashMap::rehashBucket(DirEntry* dirEntry) {
     // Creates all indices that are point to bucket being rehashed
     // Creates prefixes that will be 'OR'ed to current hashedIndex to generate each index
 
-    for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix) {
-        size_t combined = (prefix << dirEntry->numHashedDigits) | dirEntry->hashedIndex;
-        // Assigns all indices that start with 0 to old dirEntry
-        if (((combined >> (numBitsUsed - 1)) & 1) == 0) {
-            directory[combined] = dirEntry;
-        } else {  // Assigns all indices that start with 1 to new dirEntry
-            directory[combined] = newEntry;
-        }
-    }
+    // for (size_t prefix = 0; prefix < (1ULL << (numBitsUsed - dirEntry->numHashedDigits)); ++prefix) {
+    //     size_t combined = (prefix << dirEntry->numHashedDigits) | dirEntry->hashedIndex;
+    //     // Assigns all indices that start with 0 to old dirEntry
+    //     if (((combined >> (numBitsUsed - 1)) & 1) == 0) {
+    //         directory[combined] = dirEntry;
+    //     } else {  // Assigns all indices that start with 1 to new dirEntry
+    //         directory[combined] = newEntry;
+    //     }
+    // }
 
     dirEntry->numHashedDigits++;
     newEntry->numHashedDigits = dirEntry->numHashedDigits;
 
+    for (size_t i = 0; i < directory.size(); i++) {
+        if (directory[i] == dirEntry) {
+            // Check the next hashing bit (local depth - 1)
+            size_t bit = (i >> (dirEntry->numHashedDigits - 1)) & 1;
+
+            if (bit == 1) {
+                directory[i] = newEntry;  // goes to new bucket
+            } else{
+                directory[i] = dirEntry;  // stays in old bucket
+            }
+
+            if (directory[i] == dirEntry) {
+                dirEntry->hashedIndex = i;
+            } else if (directory[i] == newEntry) {
+                newEntry->hashedIndex = i;
+            }
+        }
+    }
+
     dirEntry->first = nullptr;
     dirEntry->tail = nullptr;
+    dirEntry->chainSize = 0;
+
 
     while (chainCurrent) {
         uint64_t hashedPageName = hashFunction(chainCurrent->pageName);
@@ -120,6 +152,7 @@ void HashMap::rehashBucket(DirEntry* dirEntry) {
         insertNodeToBucket(chainCurrent, currEntry);
         chainCurrent = tempNext;
     }
+
 }
 
 int HashMap::extendDir() {
@@ -157,6 +190,7 @@ int HashMap::insert(std::string pageName, uint64_t* page, size_t pageSize, bool 
             int extendDirResult = extendDir();
             if (extendDirResult == 0) {
                 rehashBucket(dirEntry);
+            } else{
             }
             // If directory can't be extended
             // Ignore bucket threshold and add to chain of hashed bucket
@@ -184,7 +218,6 @@ std::optional<HashMap::Node*> HashMap::search(std::string pageName) {
 
     else {
         Node* curr = dirEntry->first;
-
         while (curr) {
             if (curr->pageName == pageName) {
                 return curr;
@@ -214,17 +247,20 @@ std::optional<HashMap::Node*> HashMap::remove(std::string pageName) {
                 removeNode = curr;
                 if (prev == nullptr) {  // i.e. we are at first
                     dirEntry->first = curr->next;
+                    dirEntry->chainSize--;
                     return removeNode;
                 }
 
                 else if (curr == dirEntry->tail) {
                     prev->next = curr->next;
                     dirEntry->tail = prev;
+                    dirEntry->chainSize--;
                     return removeNode;
                 }
 
                 else {
                     prev->next = curr->next;
+                    dirEntry->chainSize--;
                     return removeNode;
                 }
             }
@@ -256,6 +292,37 @@ BufferPool::BufferPool(size_t initialDirSizeVal,
     clockVector.resize(maxPagesVal);
 }
 
+void HashMap::printAll() const {
+    std::cout << "===== HASH MAP STATE =====\n";
+
+    for (size_t i = 0; i < directory.size(); i++) {
+        DirEntry* entry = directory[i];
+        std::cout << "Bucket [" << i << "]\n";
+        std::cout << "  hashedIndex = " << entry->hashedIndex
+                  << ", numHashedDigits = " << entry->numHashedDigits
+                  << ", chainSize = " << entry->chainSize << "\n";
+
+        Node* curr = entry->first;
+        if (!curr) {
+            std::cout << "  (empty)\n";
+        } else {
+            while (curr) {
+                std::cout << "    Node: pageName=\"" << curr->pageName << "\""
+                          << ", page=" << curr->page
+                          << ", pageSize=" << curr->pageSize
+                          << ", dirtyBit=" << curr->dirtyBit
+                          << ", accessBit=" << curr->accessBit << "\n";
+
+                curr = curr->next;
+            }
+        }
+
+        std::cout << "\n";
+    }
+
+    std::cout << "==========================\n";
+}
+
 
 /**
  * @brief Destructor for the BufferPool class
@@ -278,11 +345,19 @@ HashMap::Node* BufferPool::searchPage(std::string pageName) {
 
 void BufferPool::compactClockVector(){
     size_t writeIndex = 0;
+
+    // Move nonempty entries forward
     for (size_t readIndex = 0; readIndex < clockVector.size(); readIndex++) {
-        if (clockVector[readIndex] != "") {
+        if (!clockVector[readIndex].empty()) {
             clockVector[writeIndex++] = clockVector[readIndex];
         }
     }
+
+    // Fill the remaining slots with ""
+    while (writeIndex < clockVector.size()) {
+        clockVector[writeIndex++] = "";
+    }
+
     numPages = writeIndex;
     if (clockHandle >= numPages) {
         clockHandle = 0;
@@ -293,6 +368,7 @@ void BufferPool::compactClockVector(){
 HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer, bool setDirty) {
     // Assert that this page is not in bufferpool already?
     HashMap::Node* evictedNode = nullptr;
+    assert(maxPages > 0 && "addPage called with zero-sized buffer pool");
 
     if (numPages == maxPages) {
         evictedNode = evictFromBpool();
@@ -313,11 +389,15 @@ HashMap::Node* BufferPool::addPage(std::string pageName, PageBuffer buffer, bool
     }
 
     numPages++;
+    assert(numPages == countNonEmptyClock(clockVector) && "numPages out of sync with clockVector after addPage");
     return evictedNode;
 }
 
 // Returns the node of the evicted page
 HashMap::Node* BufferPool::evictFromBpool() {
+
+    
+    
     std::string currPageName = clockVector[clockHandle];
     std::optional<HashMap::Node*> searchResult;
     HashMap::Node* currNode = nullptr;
@@ -333,9 +413,14 @@ HashMap::Node* BufferPool::evictFromBpool() {
             currNode->accessBit = false;
         } else {
             notFound = false;
-            hashMap->remove(currPageName);
+            std::optional<HashMap::Node*> delResult = hashMap->remove(currPageName);
+            if (!delResult.has_value()){
+                // PRINT("Didn't delete properly");
+            }
+
             clockVector[clockHandle] = "";
         }
+
         clockHandle = (clockHandle + 1) % numPages;
         currPageName = clockVector[clockHandle];
     }
@@ -344,35 +429,39 @@ HashMap::Node* BufferPool::evictFromBpool() {
 }
 
 std::string BufferPool::makeName(std::string filename, uint64_t pageNum) {
-    return filename + "_" + std::to_string(pageNum);
+    std::string newName = filename + "_" + std::to_string(pageNum);
+    return newName;
 }
 
 void BufferPool::evictNode(HashMap::Node* node){
+
     if (node->dirtyBit){
-        PRINT("In evictNode and dirtybit true");
         std::string pageName = node->pageName;
         size_t underScorePos = pageName.find('_');
         std::string filename = pageName.substr(0, underScorePos);
         std::string pageNumStr = pageName.substr(underScorePos + 1);
-        PRINT(filename);
-        PRINT(pageNumStr);
-        int pageNum = std::stoi(pageNumStr);
+        uint64_t pageNum = std::stoull(pageNumStr);
 
-        int fd = open(SST_PATH(filename).c_str(), O_WRONLY | O_CREAT | O_DIRECT, 0644);
+
+        int fd = open(SST_PATH(filename).c_str(), O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
-            close(fd);
+            // close(fd);
             throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
         }
 
         ssize_t written = pwrite(fd, node->page, PAGE_SIZE, pageNum * PAGE_SIZE);
+        if (written < 0) {
+            int err = errno;
+            close(fd);
+            throw std::runtime_error(std::string("pwrite failed: ") + std::strerror(err));
+        }
         if (written != PAGE_SIZE) {
             close(fd);
-            throw std::runtime_error(std::string("write did not write a page: ") + std::strerror(errno));
+            throw std::runtime_error("pwrite wrote a partial page");
         }
 
         close(fd);
     }
-
     std::free(node->page);
     delete node;
 }
@@ -385,22 +474,29 @@ ssize_t BufferPool::bread(std::string filename, uint64_t pageNum, PageBuffer buf
     std::string pageName = makeName(filename, pageNum);
     HashMap::Node* readNode = searchPage(pageName);
 
+    // std::cerr << "[bread] this=" << this
+    //         << " dbName=" << dbName
+    //         << " filename=" << filename
+    //         << " pageNum=" << pageNum
+    //         << " path=" << SST_PATH(filename) << "\n";
+
     ssize_t bytesRead;
 
     if (!readNode) {
         int fd = open(SST_PATH(filename).c_str(), O_RDONLY | O_DIRECT);
         if (fd == -1) {
-            close(fd);
-            throw std::runtime_error(std::string("open failed: ") + std::strerror(errno));
+            // close(fd);
+            throw std::runtime_error(std::string("open failed in bread: ") + std::strerror(errno));
         }
         bytesRead = pread(fd, buffer, PAGE_SIZE, pageNum * PAGE_SIZE);
 
         if (!bypassCache){
-            uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(PAGE_SIZE));
+            uint64_t* bufferHeap = (uint64_t*) std::aligned_alloc(4096, PAGE_SIZE);
+            // uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(PAGE_SIZE));
             memcpy(bufferHeap, buffer, PAGE_SIZE);
 
             if (bytesRead != 0){
-                PRINT("Reading something not page aligned for some reason"); // debug statement
+                // PRINT("Reading something not page aligned for some reason"); // debug statement
                 memset(bufferHeap + bytesRead, 0, PAGE_SIZE - bytesRead);
             }
 
@@ -411,12 +507,14 @@ ssize_t BufferPool::bread(std::string filename, uint64_t pageNum, PageBuffer buf
             }
         }
         close(fd);
+
         return PAGE_SIZE;
     }
 
     else {
         uint64_t* bufferFromBP = readNode->page;
         memcpy(buffer, bufferFromBP, PAGE_SIZE);
+
         return PAGE_SIZE;
     }
 }
@@ -430,7 +528,9 @@ ssize_t BufferPool::bwrite(std::string filename, uint64_t pageNum, PageBuffer bu
     HashMap::Node* writeNode = searchPage(pageName);
     
     if (!writeNode){
-        uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(PAGE_SIZE));
+
+        uint64_t* bufferHeap = (uint64_t*) std::aligned_alloc(4096, PAGE_SIZE);
+        // uint64_t* bufferHeap = static_cast<uint64_t*>(std::malloc(PAGE_SIZE));
         memcpy(bufferHeap, buffer, PAGE_SIZE);
 
         HashMap::Node* evictedNode = addPage(pageName, bufferHeap, true);
@@ -450,11 +550,9 @@ ssize_t BufferPool::bwrite(std::string filename, uint64_t pageNum, PageBuffer bu
 
 void BufferPool::evictAllPages() {
     HashMap::Node *currNode;
+
     while (numPages > 0) {
-        PRINT("In evictAllPages and in loop");
         currNode = evictFromBpool();
-        PRINT(currNode->dirtyBit);
-        PRINT(currNode->pageName);
         evictNode(currNode);
         numPages = numPages - 1;
     }
@@ -466,10 +564,12 @@ void BufferPool::bdelete(uint64_t sstNum) {
 
 void BufferPool::bdelete(std::string filename){
     std::vector<std::string> deletePageNames;
+
     for (std::string& pageName: clockVector){
         if (pageName.rfind(filename + "_", 0) == 0){
             deletePageNames.push_back(pageName);
             pageName = "";
+            numPages--;
         }
     }
 
@@ -488,4 +588,8 @@ void BufferPool::bdelete(std::string filename){
     remove(filepath.c_str());
 
 
+}
+
+void BufferPool::printHashMap(){
+    hashMap->printAll();
 }

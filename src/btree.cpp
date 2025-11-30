@@ -106,7 +106,7 @@ void BTree::createBTree(std::vector<uint64_t>* memtableData) {
     }
 
     // TODO: remember to delete the temp file here if memtableData was empty!!
-    if (!memtableData->empty()) {
+    if (memtableData->empty()) {
         bufPool->bdelete("temp");
     }
 }
@@ -192,7 +192,7 @@ void BTree::writeNode(BTNode node, uint64_t pageNum) {
     PageBuffer pageBuf = {0};
     pageBuf[0] = std::get<0>(node);
     std::copy(std::get<1>(node).begin(), std::get<1>(node).end(), pageBuf + 1);
-    std::copy(std::get<2>(node).begin(), std::get<2>(node).end(), pageBuf + std::get<1>(node).size());
+    std::copy(std::get<2>(node).begin(), std::get<2>(node).end(), pageBuf + 1 + std::get<1>(node).size());
 
     bufPool->bwrite(sstNum, pageNum, pageBuf);
 }

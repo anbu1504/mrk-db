@@ -42,6 +42,7 @@ class HashMap {
     std::optional<Node*> remove(std::string pageName);
     int extendDir();      // 0 on success 1 on fail
     int rehashBuckets();  // 0 on success 1 on fail
+    void printAll() const;
 
    private:
     uint64_t hashFunction(std::string key);
@@ -79,4 +80,5 @@ class BufferPool {
     void bdelete(uint64_t sstNum);
     void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
     void evictAllPages();                // evicts all pages and writes dirty pages to storage
+    void printHashMap();
 };

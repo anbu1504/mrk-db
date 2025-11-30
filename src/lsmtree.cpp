@@ -2,12 +2,12 @@
 
 LSMTree::LSMTree(BufferPool* bufPool)
     : bufPool(bufPool),
-      memtable(new Memtable(ENTRIES_PER_PAGE)),
+      memtable(new Memtable(memtableThreshold)),
       levels(1, 0),
       scaleFactor(SCALE_FACTOR) {}
 
 LSMTree::LSMTree(BufferPool* bufPool, std::vector<uint64_t> levels)
-    : bufPool(bufPool), memtable(new Memtable(ENTRIES_PER_PAGE)), levels(levels), scaleFactor(SCALE_FACTOR) {}
+    : bufPool(bufPool), memtable(new Memtable(memtableThreshold)), levels(levels), scaleFactor(SCALE_FACTOR) {}
 
 LSMTree::~LSMTree() { delete memtable; }
 
@@ -28,9 +28,13 @@ void LSMTree::flushHelper() {
             if (candidateLevel + 1 == levels.size()) {
                 levels.push_back(static_cast<uint64_t>(0));
             }
-            compaction(SST_TEMP_NUM(candidateLevel), candidateLevel);  // merging 2 sst's
+            sw.mergeSSTs(SST_TEMP_NUM(candidateLevel), candidateLevel);
+            // compaction();  // merging 2 sst's
             levels[candidateLevel] = 0;
-            levels[candidateLevel + 1] = 1;
+            if (levels[candidateLevel + 1] == 0){
+                levels[candidateLevel + 1] = 1;
+                break;
+            }
             candidateLevel++;
         }
     }
@@ -39,7 +43,9 @@ void LSMTree::flushHelper() {
         SSTWriter sw(bufPool, 1);
         std::vector<uint64_t> memtableData = memtable->inorderTraversalDel();
         sw.writeMiniSST(&memtableData);
+        levels.push_back(1);
     }
+
 }
 
 void LSMTree::Put(uint64_t key, uint64_t value) {
@@ -60,9 +66,8 @@ uint64_t LSMTree::Get(uint64_t key) {
         if (levels[level] == 0) {
             continue;
         }
-
         else {
-            uint64_t sstNum = level + 1;  // since memtable is level 0
+            uint64_t sstNum = level;  // since memtable is level 0
             SSTView sv(bufPool, sstNum);
 
             if (!sv.checkForKey(key)) {
@@ -122,10 +127,10 @@ void LSMTree::Close() {
 
 std::vector<uint64_t> LSMTree::getOccupancyLevels() { return levels; }
 
-void LSMTree::compaction(uint64_t sstNum1, uint64_t sstNum2) {
-    SSTWriter sw(bufPool, SST_TEMP_NUM(sstNum2));  // sstNum2 is assumed to be the largest number
+// void LSMTree::compaction(uint64_t sstNum1, uint64_t sstNum2) {
+//     SSTWriter sw(bufPool, SST_TEMP_NUM(sstNum2));  // sstNum2 is assumed to be the largest number
 
-    sw.mergeSSTs(sstNum1, sstNum2);
-    bufPool->bdelete(sstNum1);
-    bufPool->bdelete(sstNum2);
-}
+//     sw.mergeSSTs(sstNum1, sstNum2);
+//     bufPool->bdelete(sstNum1);
+//     bufPool->bdelete(sstNum2);
+// }

@@ -16,7 +16,7 @@ class LSMTree {
     std::vector<uint64_t> levels;
     uint64_t scaleFactor;  // basically M (needs to be a constant after)
 
-    void compaction(uint64_t sstNum1, uint64_t sstNum2);
+    // void compaction(uint64_t sstNum1, uint64_t sstNum2);
     void flushHelper();
 
    public:

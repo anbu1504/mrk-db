@@ -7,6 +7,9 @@
 #include <tuple>
 #include <vector>
 
+#include <stdio.h>
+#include <iostream>
+
 #define LN_2 0.69
 #define PAGE_SIZE 4096
 #define UINT64_SIZE 8

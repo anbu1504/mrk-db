@@ -184,7 +184,9 @@ Node* Memtable::rotateLeft(Node* x) {
 
 size_t Memtable::getSize() { return size; }
 
-bool Memtable::isThresholdReached() { return size >= threshold; }
+bool Memtable::isThresholdReached() {
+    return size >= threshold;
+}
 
 Node* Memtable::getRoot() { return root; }
 
