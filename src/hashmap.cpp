@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <sys/fcntl.h>
+#include <cstring>
 
 #define SST_PATH_STR(x) ((dbName + "/" + x + ".sst").c_str())
 
@@ -11,20 +12,20 @@ HPage::HPage(std::string pageID, bool dirtyBit, bool refBit, uint64_t probeSeqLe
   : pageID(pageID), dirtyBit(dirtyBit), refBit(refBit), probeSeqLen(probeSeqLen), cachedPage(cachedPage) {}
 
 void HPage::reset() {
-    std::string pageID = "";
-    bool dirtyBit = false;
-    bool refBit = true;
-    uint64_t probeSeqLen = 0;
+    pageID = "";
+    dirtyBit = false;
+    refBit = true;
+    probeSeqLen = 0;
     if (cachedPage) {
         free(cachedPage);
-        uint64_t* cachedPage = nullptr;
+        cachedPage = nullptr;
     }
 }
 
 HashMap::HashMap(std::string dbName) : dbName(dbName), numCachedPages(0), clockHandle(0), cacheVec(cacheSize, HPage()) {}
 
 HashMap::~HashMap() {
-    for (int hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
+    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
         cacheVec[hPageNum].reset();
     }
 }
@@ -88,7 +89,7 @@ void HashMap::put(std::string pageID, PageBuffer pageBuf) {
 }
 
 void HashMap::deleteAllWithPrefix(std::string fileName) { 
-    for (int hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
+    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
         // Note that string.compare() returns 0 if string starts with fileName
         if (!(cacheVec[hPageNum].pageID.compare(0, fileName.length(), fileName))) {
             cacheVec[hPageNum].reset();
@@ -97,7 +98,7 @@ void HashMap::deleteAllWithPrefix(std::string fileName) {
 }
 
 void HashMap::evictAll() { 
-    for (int hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
+    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
         if (cacheVec[hPageNum].cachedPage && cacheVec[hPageNum].dirtyBit) {
             evict(&cacheVec[hPageNum]);
         }

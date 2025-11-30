@@ -22,7 +22,7 @@ class HashMap {
     std::vector<HPage> cacheVec;
     void runClock();
     void evict(HPage* victim);
-    HPage* HashMap::getHPage(std::string pageID);
+    HPage* getHPage(std::string pageID);
 
    public:
    HashMap(std::string dbName);

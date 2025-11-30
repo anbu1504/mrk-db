@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <sys/fcntl.h>
+#include <cstring>
 
 #define SST_PATH(x) ((dbName + "/" + std::to_string(x) + ".sst").c_str())
 

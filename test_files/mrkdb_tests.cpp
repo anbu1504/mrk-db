@@ -134,14 +134,24 @@ class DBTester {
         auto val8 = db.Get((7 * THRESHOLD) + 55);
 
         assert(val1.value() == 1);
-
+        PRINT("after first check");
         assert(val2.value() == THRESHOLD + 2);
+        PRINT("after second check");
+        if (!val3.has_value()) { // currently failing here
+            PRINT("val 3 has no value");
+        }
         assert(val3.value() == (2 * THRESHOLD) + 2);
+        PRINT("after third check");
         assert(val4.value() == (3 * THRESHOLD) + 23);
+        PRINT("after fourth check");
         assert(val5.value() == (4 * THRESHOLD) + 24);
+        PRINT("after fifth check");
         assert(val6.value() == (5 * THRESHOLD) + 30);
+        PRINT("after sixth check");
         assert(val7.value() == (6 * THRESHOLD) + 41);
+        PRINT("after seventh check");
         assert(val8.value() == (7 * THRESHOLD) + 55);
+        PRINT("after eighth check");
 
         std::cout << "DB::GetSSTDeeper() for sst test deeper passed!" << std::endl;
 
