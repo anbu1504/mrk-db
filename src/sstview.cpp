@@ -1,7 +1,7 @@
 #include "../include/sstview.hpp"
 
 SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)
-    : bufPool(bufPool), sstNum(sstNum), pageBuf() {  // Is this initialization correct?
+    : bufPool(bufPool), sstNum(sstNum), pageBuf(), pageNum(TOMBSTONE) {  // Is this initialization correct?
 
     PageBuffer metadataPageBuf;
     // bufPool->printHashMap();
@@ -51,7 +51,8 @@ void SSTView::findPage(uint64_t key) {
 
     itemsRead = calcNumItemsInPage(numKeys, pageNum);
     keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
-
+    // PRINT("keysRead");
+    // PRINT(keysRead);
     currKeyIdx = binSearch(0, keysRead - 1, [&](uint64_t m) {
 
         return (key < pageBuf[m * 2]) ? -1 : (key > pageBuf[m * 2]) ? 1 : 0;
@@ -61,8 +62,10 @@ void SSTView::findPage(uint64_t key) {
 // Fast-forward currKeyIdx until getCurrKey() >= key
 void SSTView::fastFwd(uint64_t key) {
     uint64_t itemsRead;
+    if (pageNum == TOMBSTONE) {
+        findPage(key);
+    }
     uint64_t currKey = pageBuf[currKeyIdx * 2];
-
     while (currKey < key) {
         currKeyIdx++;
 

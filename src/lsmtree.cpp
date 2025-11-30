@@ -101,14 +101,17 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
     }
 
     for (uint64_t j = key1; j < key2 + 1; j++) {
-        uint64_t memtableHandle = 0;
-        while (std::get<0>(memtableOutput[memtableHandle]) < j) {
-            memtableHandle++;
-        }
-        if (std::get<0>(memtableOutput[memtableHandle]) == j) {
-            output.push_back(memtableOutput[memtableHandle]);
-            memtableHandle++;
-            continue;
+        if (memtableOutput.size() != 0) {
+            uint64_t memtableHandle = 0;
+            while (std::get<0>(memtableOutput[memtableHandle]) < j) {
+                memtableHandle++;
+            }
+            
+            if (std::get<0>(memtableOutput[memtableHandle]) == j) {
+                output.push_back(memtableOutput[memtableHandle]);
+                memtableHandle++;
+                continue;
+            }
         }
 
         for (uint64_t level = 1; level < levels.size(); level++) {  // looping from start key to end key
@@ -122,7 +125,6 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
                 if (!sv.checkForKey(j)) {
                     continue;
                 }
-                sv.findPage(j);
                 sv.fastFwd(j);
 
                 if (sv.getCurrKey() == j) {
