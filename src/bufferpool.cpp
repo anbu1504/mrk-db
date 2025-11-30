@@ -5,23 +5,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <sys/fcntl.h>
-
-#define PAGE_ID(s, p) (std::to_string(s) + "_" + std::to_string(p))
-#define SST_PATH(x) ((dbName + "/" + std::to_string(x) + ".sst").c_str())
-
-HPage::HPage(std::string pageID, bool dirtyBit, bool refBit, uint64_t probeSeqLen, uint64_t* cachedPage)
-  : pageID(pageID), dirtyBit(dirtyBit), refBit(refBit), probeSeqLen(probeSeqLen), cachedPage(cachedPage) {}
-
-void HPage::reset() {
-    pageID = "";
-    dirtyBit = false;
-    refBit = true;
-    probeSeqLen = 0;
-    if (cachedPage) {
-        free(cachedPage);
-        cachedPage = nullptr;
-    }
-};
+#include <assert.h>
 
 BufferPool::BufferPool(std::string dbName) : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
 
@@ -31,27 +15,38 @@ BufferPool::~BufferPool() {
     }
 }
 
+std::string BufferPool::createSSTPath(uint64_t x) { return dbName + "/" + std::to_string(x) + ".sst"; }
+std::string BufferPool::createPageID(uint64_t s, uint64_t p) { return std::to_string(s) + "_" + std::to_string(p); }
+
 // ========== PUBLIC METHODS ==========
 
 void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache) {
-    HPage* cachedHPage = cacheGet(PAGE_ID(sstNum, pageNum));
+    HPage* cachedHPage = cacheGet(createPageID(sstNum, pageNum));
     if (!bypassCache && cachedHPage) {
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
+
+        // debugging
+        // int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY);
+        // pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
+        // close(fd);
     } else {
-        int fd = open(SST_PATH(sstNum), O_RDONLY);
+        int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY);
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
-        cachePut(PAGE_ID(sstNum, pageNum), pageBuf, false);
+        cachePut(createPageID(sstNum, pageNum), pageBuf, false);
     }
 }
 
 void BufferPool::bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf) {
-    cachePut(PAGE_ID(sstNum, pageNum), pageBuf, true);
+    cachePut(createPageID(sstNum, pageNum), pageBuf, true);
+    int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644);
+    pwrite(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
+    close(fd);
 }
 
 void BufferPool::bdelete(uint64_t sstNum) {
     // Check the filesystem for the file (if it exists on disk)
-    std::remove(SST_PATH(sstNum));
+    std::remove(createSSTPath(sstNum).c_str());
 
     // Scan the hashtable for entries w/ matching prefixes, and delete em
     std::string sstString = std::to_string(sstNum);
@@ -61,7 +56,6 @@ void BufferPool::bdelete(uint64_t sstNum) {
             hashTable[hPageNum].reset();
         }
     }
-
 }
 
 void BufferPool::evictAllPages() {
@@ -73,7 +67,7 @@ void BufferPool::evictAllPages() {
 }
 
 HPage* BufferPool::cacheGet(std::string pageID) {
-    uint64_t cacheIdx = XXHash64::hash(&pageID, sizeof(uint64_t), 0) % cacheSize;
+    uint64_t cacheIdx = XXHash64::hash(pageID.data(), pageID.size(), 0) % cacheSize;
     uint64_t currProbeSeqLen = 0;
     while (hashTable[cacheIdx].cachedPage && !(hashTable[cacheIdx].pageID == pageID) && !(currProbeSeqLen > hashTable[cacheIdx].probeSeqLen)) {
         cacheIdx = (cacheIdx + 1) % cacheSize;
@@ -105,7 +99,7 @@ void BufferPool::cachePut(std::string pageID, PageBuffer pageBuf, bool dirty) {
 
     HPage tempHPage = HPage(pageID, dirty, true, 0, newPage);
 
-    uint64_t cacheIdx = XXHash64::hash(&pageID, sizeof(uint64_t), 0) % cacheSize;
+    uint64_t cacheIdx = XXHash64::hash(pageID.data(), pageID.size(), 0) % cacheSize;
     while (hashTable[cacheIdx].cachedPage) { // While we keep bumping into existing entries
 
         if (tempHPage.probeSeqLen > hashTable[cacheIdx].probeSeqLen) {
@@ -114,13 +108,13 @@ void BufferPool::cachePut(std::string pageID, PageBuffer pageBuf, bool dirty) {
 
         cacheIdx = (cacheIdx + 1) % cacheSize;
         tempHPage.probeSeqLen++;
-        break;
     }
 
     // Now, cacheIdx should be the idx of a free node
     std::swap(hashTable[cacheIdx], tempHPage);
     numCachedPages++;
 
+    assert(!tempHPage.cachedPage);
 }
 
 void BufferPool::evict(HPage* victim) {
@@ -128,7 +122,7 @@ void BufferPool::evict(HPage* victim) {
     uint64_t sstNum = std::stoull(victim->pageID.substr(0, underscoreIdx));
     uint64_t pageNum = std::stoull(victim->pageID.substr(underscoreIdx + 1));
 
-    int fd = open(SST_PATH(sstNum), O_RDWR | O_CREAT, 0644);
+    int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644);
     pwrite(fd, victim->cachedPage, PAGE_SIZE, pageNum * PAGE_SIZE);
     close(fd);
 
@@ -143,10 +137,7 @@ void BufferPool::runClockIfFull() {
             evict(&hashTable[clockHandle]);
             numCachedPages--;
         }
-        clockHandle++;
+        clockHandle = (clockHandle + 1) % cacheSize;
     }
     return;
 }
-
-
-    

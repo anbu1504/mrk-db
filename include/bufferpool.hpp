@@ -11,8 +11,21 @@ class HPage {
     uint64_t probeSeqLen;
     uint64_t* cachedPage;
 
-    HPage(std::string pageID = "", bool dirtyBit = false, bool refBit = true, uint64_t probeSeqLen = 0, uint64_t* cachedPage = nullptr);
-    void reset(); // Factory reset this HPage
+    HPage(std::string pageID = "", bool dirtyBit = false, bool refBit = true,
+          uint64_t probeSeqLen = 0, uint64_t* cachedPage = nullptr)
+      : pageID(pageID), dirtyBit(dirtyBit), refBit(refBit),
+        probeSeqLen(probeSeqLen), cachedPage(cachedPage) {}
+    
+    void reset() {
+        pageID.clear();
+        dirtyBit = false;
+        refBit = true;
+        probeSeqLen = 0;
+        if (cachedPage) {
+            free(cachedPage);
+            cachedPage = nullptr;
+        }
+    }
 };
 
 class BufferPool {
@@ -27,6 +40,8 @@ class BufferPool {
     void evict(HPage* victim);
     void runClockIfFull();
 
+    std::string createSSTPath(uint64_t sstNum);
+    std::string createPageID(uint64_t sstNum, uint64_t pageNum);
 
    public:
     BufferPool(std::string dbNameVal);  // constructor
