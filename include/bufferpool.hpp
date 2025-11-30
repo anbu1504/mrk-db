@@ -1,22 +1,39 @@
 #pragma once
 
 #include "constants.hpp"
-#include "hashmap.hpp"
+#include "globals.hpp"
+
+class HPage {
+   public:
+    std::string pageID;
+    bool dirtyBit; // Used during eviction
+    bool refBit; // Used by the clock algorithm
+    uint64_t probeSeqLen;
+    uint64_t* cachedPage;
+
+    HPage(std::string pageID = "", bool dirtyBit = false, bool refBit = true, uint64_t probeSeqLen = 0, uint64_t* cachedPage = nullptr);
+    void reset(); // Factory reset this HPage
+};
 
 class BufferPool {
    private:
-   std::string dbName;
-    HashMap* hashMap;
+    std::string dbName;
+    uint64_t numCachedPages;
+    uint64_t clockHandle;
+    std::vector<HPage> hashTable; // An open-addressing hash table, using Robin Hood hashing
+
+    HPage* cacheGet(std::string pageID);
+    void cachePut(std::string pageID, PageBuffer pageBuf, bool dirty);
+    void evict(HPage* victim);
+    void runClockIfFull();
+
 
    public:
     BufferPool(std::string dbNameVal);  // constructor
     ~BufferPool();                      // destructor to free memory
 
     void bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache = false);  // return number of bytes read
-    // ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
     void bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf);  // return number of bytes written
-    // ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
-    void bdelete(uint64_t sstNum);
-    // void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
+    void bdelete(uint64_t sstNum); // Evicts all pages in bufferpool of given file and deletes the file
     void evictAllPages();                // evicts all pages and writes dirty pages to storage
 };
