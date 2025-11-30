@@ -34,24 +34,6 @@ Has these methods:
     - Makes use of SST findPage and fastFwd methods to implement LSM scan (as seen in class)
 
 
-### BufferPool
-Holds the following:
-- dbName!!!
-
-Has these methods:
-- bread (I just like this name)
-    - Accepts: file_id (e.g., 3, 50, temp, etc.), pageNum, pageBuf
-    - Could alternatively create an overloaded version that does the same thing, but accepts sstNum and converts it to string first before calling the o.g. bread
-    - Note that we should always be reading a page!!
-    - In the internal hash map, if the directory cannot extend further and bucket can't be split and rehashed, bucket threshold no longer applies
-- bwrite
-    - The same params as bread
-    - It's up to the caller to ensure pageBuf is 0-padded
-- close
-    - To be called when closing the database 
-    - Evicts all pages and writes dirty pages to storage
-
-
 ### SSTView
 Holds the following:
 - sstNum
@@ -110,3 +92,46 @@ Holds the following:
 Has these methods:
 - findLeafPage, writeToSST(*memtable) & writeToSST() (either function overload or optional parameter)
 - writeToSST should be called after LSMTree compaction, and uses the tempfile if *memtable isn't passed
+
+
+### BufferPool
+Holds the following:
+- dbName!!!
+- HashTable
+
+Has these public methods:
+- bread (I just like this name)
+    - Accepts: file_id (e.g., 3, 50, temp, etc.), pageNum, pageBuf
+    - Could alternatively create an overloaded version that does the same thing, but accepts sstNum and converts it to string first before calling the o.g. bread
+    - Note that we should always be reading a page!!
+    - In the internal hash map, if the directory cannot extend further and bucket can't be split and rehashed, bucket threshold no longer applies
+- bwrite
+    - The same params as bread
+    - It's up to the caller to ensure pageBuf is 0-padded
+- close
+    - To be called when closing the database 
+    - Evicts all pages and writes dirty pages to storage
+
+
+
+### HashTable
+Let CACHE_SIZE be the max number of bufferpool pages we want to cache.
+
+Holds the following:
+- uint64_t numCachedPages
+- uint64_t clockHandle (goes from 0 - (CACHE_SIZE - 1)), ONLY used when numCachedPages == CACHE_SIZE, in order to free up a page
+- Vector of size CACHE_SIZE, containing HPage objects (hashtable pages)
+    - HPage contains the following:
+        - string pageID (filename + pagenum)
+        - bool refBit (used by clock algo)
+        - bool dirtyBit (used during eviction)
+        - uint64* cachedPage (malloced page, nullptr)
+
+Has these methods:
+- Get (returns either ptr to page or nullptr)
+- Put (should always succeed, if more space is needed then it should just evict using clock)
+- DeleteAllWithPrefix (does NOT run clock, scans the hashtable and deletes all entries with a matching filename prefix)
+- DeleteAll (this is only called when closing, so just do a linear scan and evict all cached pages)
+
+Notes:
+- Get and Put set refBit to 1, only clock can set them to 0

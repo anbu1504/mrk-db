@@ -1,84 +1,22 @@
 #pragma once
 
 #include "constants.hpp"
-
-class HashMap {
-    friend class HashMapTester;
-
-   public:
-    int bucketOverflowThreshold;
-    int numBitsUsed;  // used for directory
-
-    struct Node {
-        std::string pageName;
-        uint64_t* page;
-        Node* next;
-        bool accessBit;
-        size_t pageSize;
-        bool dirtyBit;
-
-        Node(std::string name, uint64_t* p, size_t size)
-            : pageName(name), page(p), next(nullptr), accessBit(true), pageSize(size), dirtyBit(false) {}
-    };
-
-    struct DirEntry {
-        Node* first;
-        Node* tail;
-        size_t chainSize;
-        int numHashedDigits;  // number of digits used to differentiate this bucket
-        size_t hashedIndex;
-
-        DirEntry() : first(nullptr), tail(nullptr), chainSize(0), numHashedDigits(0), hashedIndex(0) {}
-    };
-
-    std::vector<DirEntry*> directory;
-    size_t maxDirSize;
-
-    HashMap(size_t initial, size_t maxDirSize);  // constructor with initial size
-    ~HashMap();                                  // destructor to free memory
-
-    int insert(std::string pageName, uint64_t* page, size_t pageSize, bool setDirty);  // 0 on success 1 on fail
-    std::optional<Node*> search(std::string pageName);
-    std::optional<Node*> remove(std::string pageName);
-    int extendDir();      // 0 on success 1 on fail
-    int rehashBuckets();  // 0 on success 1 on fail
-    void printAll() const;
-
-   private:
-    uint64_t hashFunction(std::string key);
-    void insertNodeToBucket(Node* node, DirEntry* dirEntry);
-    void rehashBucket(DirEntry* dirEntry);
-};
+#include "hashmap.hpp"
 
 class BufferPool {
    private:
+   std::string dbName;
     HashMap* hashMap;
-    std::vector<std::string> clockVector;
-    HashMap::Node* evictFromBpool();
-    std::string makeName(std::string filename, uint64_t pageNum);
-    uint64_t clockHandle;
-    size_t initialDirSize;  // Initial number of buckets in hash map
-    size_t maxDirSize;      // Maximum number of buckets in hash map
-    size_t maxPages;
-    size_t numPages;  // Maximum number of pages in buffer pool
-    std::string dbName;
-    HashMap::Node* searchPage(std::string pageName);
-    HashMap::Node* addPage(std::string pageName, uint64_t* buffer, bool setDirty);
-    void evictNode(HashMap::Node* node);
-    void compactClockVector();
 
    public:
-    BufferPool(size_t initialDirSizeVal, size_t maxDirSizeVal, size_t maxPagesVal,
-               std::string dbNameVal);  // constructor
+    BufferPool(std::string dbNameVal);  // constructor
     ~BufferPool();                      // destructor to free memory
 
-    ssize_t bread(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer,
-                  bool bypassCache = false);  // return number of bytes read
-    ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
-    ssize_t bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer buffer);  // return number of bytes written
-    ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
+    void bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bool bypassCache = false);  // return number of bytes read
+    // ssize_t bread(std::string filename, uint64_t pageNum, PageBuffer buffer, bool bypassCache = false);
+    void bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf);  // return number of bytes written
+    // ssize_t bwrite(std::string filename, uint64_t pageNum, PageBuffer buffer);
     void bdelete(uint64_t sstNum);
-    void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
+    // void bdelete(std::string filename);  // Evicts all pages in bufferpool of given file and deletes the file
     void evictAllPages();                // evicts all pages and writes dirty pages to storage
-    void printHashMap();
 };

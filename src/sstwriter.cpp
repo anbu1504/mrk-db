@@ -56,7 +56,7 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
     uint64_t pageNum = 0;
 
     for (uint64_t currKeyIdx = 0; currKeyIdx < numKeys; currKeyIdx++) {
-        uint64_t pageIdx = (currKeyIdx * 2) % UINT64S_PER_PAGE; //chat said dis fr
+        uint64_t pageIdx = (currKeyIdx * 2) % UINT64S_PER_PAGE;
 
         if (!(pageIdx % UINT64S_PER_PAGE)) {
             pageNum++;
@@ -169,7 +169,7 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
             currKeyIndTemp = currKeyIndTemp + 2;
 
             if (currKeyIndTemp == UINT64S_PER_PAGE) {
-                bufPool->bwrite("temp", currPageNumTemp, bufferTemp);
+                bufPool->bwrite(LAYER_DATA_NUM, currPageNumTemp, bufferTemp);
                 currKeyIndTemp = 0;
                 currPageNumTemp++;
             }
@@ -223,7 +223,7 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
     if (currKeyIndTemp != UINT64S_PER_PAGE) {
         std::fill(bufferTemp + currKeyIndTemp, bufferTemp + UINT64S_PER_PAGE, 0);
     }
-    bufPool->bwrite("temp", currPageNumTemp, bufferTemp);
+    bufPool->bwrite(LAYER_DATA_NUM, currPageNumTemp, bufferTemp);
     currKeyIndTemp = 0;
     currPageNumTemp++;
     

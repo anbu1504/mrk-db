@@ -5,23 +5,23 @@
 #include <iostream>
 
 int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue,
-             uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t maxNumPagesValue,
+             uint64_t initialDirSizeValue, uint64_t maxDirSizeValue, uint64_t cacheSizeValue,
              uint64_t memtableThresholdValue) {
     if (std::filesystem::create_directory(dbName)) {
         useBTreeSearch = useBTreeSearchValue;
         bitsPerEntry = bitsPerEntryValue;
-        initialDirSize = initialDirSizeValue;
-        maxDirSize = maxDirSizeValue;
-        maxNumPages = maxNumPagesValue;
+        // initialDirSize = initialDirSizeValue;
+        // maxDirSize = maxDirSizeValue;
+        cacheSize = cacheSizeValue;
         memtableThreshold = memtableThresholdValue;
 
-        bufPool = new BufferPool(initialDirSize, maxDirSize, maxNumPages, dbName);
+        bufPool = new BufferPool(dbName);
         lsmTree = new LSMTree(bufPool);
     } else {
         PageBuffer pageBuf;
 
-        BufferPool* bufPoolTemp = new BufferPool(0, 0, 0, dbName);
-        bufPoolTemp->bread("meta", 0, pageBuf, true);
+        BufferPool* bufPoolTemp = new BufferPool(dbName);
+        bufPoolTemp->bread(METADATA_NUM, 0, pageBuf, true);
         bufPoolTemp->evictAllPages();
 
         delete bufPoolTemp;
@@ -36,7 +36,7 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
             uint64_t count = pageBuf[i + 6];
             levels.push_back(count);
         }
-        bufPool = new BufferPool(pageBuf[2], pageBuf[3], pageBuf[4], dbName);
+        bufPool = new BufferPool(dbName);
         lsmTree = new LSMTree(bufPool, levels);
     }
     return 0;
@@ -93,9 +93,9 @@ int DB::Close() {
     PageBuffer pageBuf = {0};  // used for writing into meta.sst
     pageBuf[0] = static_cast<uint64_t>(useBTreeSearch);
     pageBuf[1] = bitsPerEntry;
-    pageBuf[2] = initialDirSize;
-    pageBuf[3] = maxDirSize;
-    pageBuf[4] = maxNumPages;
+    // pageBuf[2] = initialDirSize;
+    // pageBuf[3] = maxDirSize;
+    pageBuf[4] = cacheSize;
     pageBuf[5] = lsmTreeLevels;
 
     // Then the rest of the indices of pageBuf are used for
@@ -105,7 +105,7 @@ int DB::Close() {
         pageBuf[i + 6] =
             lsmOccupancyLevels[i];  // i + 6 for levels since pageBuf already has first 6 indices with other stuff
     }
-    bufPool->bwrite("meta", 0, pageBuf);  // writing into meta.sst
+    bufPool->bwrite(METADATA_NUM, 0, pageBuf);  // writing into meta.sst
 
     lsmTree->Close();
     bufPool->evictAllPages();

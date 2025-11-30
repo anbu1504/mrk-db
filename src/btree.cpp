@@ -107,7 +107,7 @@ void BTree::createBTree(std::vector<uint64_t>* memtableData) {
 
     // TODO: remember to delete the temp file here if memtableData was empty!!
     if (memtableData->empty()) {
-        bufPool->bdelete("temp");
+        bufPool->bdelete(LAYER_DATA_NUM);
     }
 }
 
@@ -168,7 +168,7 @@ void BTree::loadLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum) 
     layerData->clear();
 
     PageBuffer pageBuf;
-    bufPool->bread("temp", pageNum, pageBuf);
+    bufPool->bread(LAYER_DATA_NUM, pageNum, pageBuf);
 
     for (uint64_t nodeDataIdx = 0; nodeDataIdx < UINT64S_PER_PAGE / 2; nodeDataIdx++) {
         layerData->push_back(std::make_tuple(pageBuf[nodeDataIdx], pageBuf[nodeDataIdx + 1]));
@@ -183,7 +183,7 @@ void BTree::writeLayerData(std::vector<BTNodeData>* layerData, uint64_t pageNum)
         pageBuf[nodeDataIdx * 2 + 1] = std::get<1>(layerData->at(nodeDataIdx));
     }
 
-    bufPool->bwrite("temp", pageNum, pageBuf);
+    bufPool->bwrite(LAYER_DATA_NUM, pageNum, pageBuf);
 
     layerData->clear();
 }

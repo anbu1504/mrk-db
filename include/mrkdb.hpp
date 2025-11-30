@@ -29,7 +29,7 @@ class DB {
      */
 
     int Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12,
-             uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t maxNumPagesValue = 4096,
+             uint64_t initialDirSizeValue = 4, uint64_t maxDirSizeValue = 64, uint64_t cacheSizeValue = 4096,
              uint64_t memtableThresholdValue = 16384);
 
     /**
