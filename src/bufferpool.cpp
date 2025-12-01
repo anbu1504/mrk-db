@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <assert.h>
+#include <iomanip>
 
 BufferPool::BufferPool(std::string dbName) : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
 
@@ -24,11 +25,6 @@ void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bo
     HPage* cachedHPage = cacheGet(createPageID(sstNum, pageNum));
     if (!bypassCache && cachedHPage) {
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
-
-        // debugging
-        // int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY);
-        // pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
-        // close(fd);
     } else {
         int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY);
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
@@ -39,9 +35,6 @@ void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bo
 
 void BufferPool::bwrite(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf) {
     cachePut(createPageID(sstNum, pageNum), pageBuf, true);
-    int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644);
-    pwrite(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
-    close(fd);
 }
 
 void BufferPool::bdelete(uint64_t sstNum) {
@@ -49,22 +42,42 @@ void BufferPool::bdelete(uint64_t sstNum) {
     std::remove(createSSTPath(sstNum).c_str());
 
     // Scan the hashtable for entries w/ matching prefixes, and delete em
-    std::string sstString = std::to_string(sstNum);
-    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
-        // Note that string.compare() returns 0 if string starts with fileName
-        if (!(hashTable[hPageNum].pageID.compare(0, sstString.length(), sstString))) {
-            hashTable[hPageNum].reset();
+    // std::string sstString = std::to_string(sstNum);
+
+    uint64_t hPageNum = 0;
+
+    for (uint64_t visitedPages = 0; visitedPages < cacheSize; visitedPages++) {
+        if (!hashTable[hPageNum].cachedPage) {
+            hPageNum++;
+            continue;
+        }
+
+        uint64_t underscoreIdx = hashTable[hPageNum].pageID.find("_");
+        uint64_t hPageSSTNum = std::stoull(hashTable[hPageNum].pageID.substr(0, underscoreIdx));
+        if (hPageSSTNum == sstNum) {
+            // If we found a matching page, delete that page. If a backshift occurred, then
+            // keep hPageNum the same. Otherwise, move onto the next page.
+            hPageNum += !cacheDel(hPageNum);
+        } else {
+            hPageNum++;
         }
     }
 }
 
 void BufferPool::evictAllPages() {
-    for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
-        if (hashTable[hPageNum].cachedPage && hashTable[hPageNum].dirtyBit) {
-            evict(&hashTable[hPageNum]);
+    uint64_t hPageNum = 0;
+    for (uint64_t visitedPages = 0; visitedPages < cacheSize; visitedPages++) {
+        if (hashTable[hPageNum].cachedPage) {
+            // If we found an existing page, evict that page. If a backshift occurred, then
+            // keep hPageNum the same. Otherwise, move onto the next page.
+            hPageNum += !evict(hPageNum);
+        } else {
+            hPageNum++;
         }
     }
 }
+
+// ========== PRIVATE METHODS ==========
 
 HPage* BufferPool::cacheGet(std::string pageID) {
     uint64_t cacheIdx = XXHash64::hash(pageID.data(), pageID.size(), 0) % cacheSize;
@@ -81,8 +94,6 @@ HPage* BufferPool::cacheGet(std::string pageID) {
 
     return nullptr;
 }
-
-// ========== PRIVATE METHODS ==========
 
 void BufferPool::cachePut(std::string pageID, PageBuffer pageBuf, bool dirty) {
     HPage* getAttempt = cacheGet(pageID);
@@ -117,27 +128,66 @@ void BufferPool::cachePut(std::string pageID, PageBuffer pageBuf, bool dirty) {
     assert(!tempHPage.cachedPage);
 }
 
-void BufferPool::evict(HPage* victim) {
-    uint64_t underscoreIdx = victim->pageID.find("_");
-    uint64_t sstNum = std::stoull(victim->pageID.substr(0, underscoreIdx));
-    uint64_t pageNum = std::stoull(victim->pageID.substr(underscoreIdx + 1));
+// Performs a backshift delete
+bool BufferPool::cacheDel(uint64_t pageIdx) {
+    bool shifted = false;
+    hashTable[pageIdx].reset();
+    // if theres a page at the next idx who is displaced, move it back
+    while (hashTable[(pageIdx + 1) % cacheSize].cachedPage && hashTable[(pageIdx + 1) % cacheSize].probeSeqLen) {
+        shifted = true;
+        hashTable[(pageIdx + 1) % cacheSize].probeSeqLen--;
+        std::swap(hashTable[pageIdx], hashTable[(pageIdx + 1) % cacheSize]);
+        pageIdx = (pageIdx + 1) % cacheSize;
+    }
 
-    int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644);
-    pwrite(fd, victim->cachedPage, PAGE_SIZE, pageNum * PAGE_SIZE);
-    close(fd);
+    numCachedPages--;
+    return shifted;
+}
 
-    victim->reset();
+bool BufferPool::evict(uint64_t victimIdx) {
+    HPage victim = hashTable[victimIdx];
+    if (victim.dirtyBit) {
+        uint64_t underscoreIdx = victim.pageID.find("_");
+        uint64_t sstNum = std::stoull(victim.pageID.substr(0, underscoreIdx));
+        uint64_t pageNum = std::stoull(victim.pageID.substr(underscoreIdx + 1));
+
+        int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644);
+        pwrite(fd, victim.cachedPage, PAGE_SIZE, pageNum * PAGE_SIZE);
+        close(fd);
+    }
+
+    return cacheDel(victimIdx);
 }
 
 void BufferPool::runClockIfFull() {
+    bool shifted = false;
     while (numCachedPages == cacheSize) {
         if (hashTable[clockHandle].refBit) {
             hashTable[clockHandle].refBit = false;
         } else {
-            evict(&hashTable[clockHandle]);
-            numCachedPages--;
+            shifted = evict(clockHandle);
         }
-        clockHandle = (clockHandle + 1) % cacheSize;
+        // Need to think about this logic depending on whether backshift delete moves stuff or not.
+        // Ok so, if we shifted things back, then no need to move the clock handle!!
+        clockHandle = (clockHandle + !shifted) % cacheSize;
     }
     return;
 }
+
+// void BufferPool::printHashTable() {
+//     std::cout << "=== BufferPool Hash Table ===\n";
+//     std::cout << "idx\tpageID\t\tdirty ref probe cached?\n";
+//     for (uint64_t i = 0; i < cacheSize; i++) {
+//         const HPage& h = hashTable[i];
+//         if (!h.cachedPage) continue;
+//         std::cout << i << "\t"
+//                   << h.pageID << "\t"
+//                   << (h.dirtyBit ? "D" : "-") << "     "
+//                   << (h.refBit ? "R" : "-") << "   "
+//                   << std::setw(2) << h.probeSeqLen << "   "
+//                   << "0x" << std::hex << (uintptr_t)h.cachedPage << std::dec
+//                   << "\n";
+//     }
+//     std::cout << "numCachedPages=" << numCachedPages
+//               << " clockHandle=" << clockHandle << "\n";
+// }

@@ -37,8 +37,10 @@ class BufferPool {
 
     HPage* cacheGet(std::string pageID);
     void cachePut(std::string pageID, PageBuffer pageBuf, bool dirty);
-    void evict(HPage* victim);
+    bool cacheDel(uint64_t pageIdx);
+    bool evict(uint64_t victimIdx) ;
     void runClockIfFull();
+    // void printHashTable();
 
     std::string createSSTPath(uint64_t sstNum);
     std::string createPageID(uint64_t sstNum, uint64_t pageNum);
