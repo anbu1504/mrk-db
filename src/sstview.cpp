@@ -51,8 +51,6 @@ void SSTView::findPage(uint64_t key) {
 
     itemsRead = calcNumItemsInPage(numKeys, pageNum);
     keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
-    // PRINT("keysRead");
-    // PRINT(keysRead);
     currKeyIdx = binSearch(0, keysRead - 1, [&](uint64_t m) {
 
         return (key < pageBuf[m * 2]) ? -1 : (key > pageBuf[m * 2]) ? 1 : 0;

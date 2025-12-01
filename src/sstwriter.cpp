@@ -181,7 +181,7 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
         // If at end and no more pages left, what to do?
         // Done if both files are empty (done reading)
         if (currKeyIndOne == itemsInPageOne) {
-            if (currPageNumOne == numPagesOne - 1) {
+            if (currPageNumOne == numPagesOne) {
                 fileOneEmpty = true;
             } else {
                 currPageNumOne++;
@@ -192,7 +192,7 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
         }
 
         if (currKeyIndTwo == itemsInPageTwo) {
-            if (currPageNumTwo == numPagesTwo - 1) {
+            if (currPageNumTwo == numPagesTwo) {
                 fileTwoEmpty = true;
             } else {
                 currPageNumTwo++;
