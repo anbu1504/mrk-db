@@ -1042,7 +1042,7 @@ int main() {
     tester.testDBUpdatesMemtable();
     tester.testDBUpdatesTwice();
     tester.testDBMultipleUpdates();
-    tester.testDBMultipleDeletesDeeper();
+    tester.testDBMultipleUpdatesDeeper();
     tester.testDBPersistentUpdates();
     tester.testDBDeleteScans();
     return 0;
