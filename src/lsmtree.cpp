@@ -108,7 +108,9 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
             }
             
             if (std::get<0>(memtableOutput[memtableHandle]) == j) {
-                output.push_back(memtableOutput[memtableHandle]);
+                if (std::get<1>(memtableOutput[memtableHandle]) != TOMBSTONE) {
+                    output.push_back(memtableOutput[memtableHandle]);
+                }
                 memtableHandle++;
                 continue;
             }
@@ -130,7 +132,9 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
                 if (sv.getCurrKey() == j) {
                     uint64_t currKey = sv.getCurrKey();
                     uint64_t currVal = sv.getCurrValue();
-                    output.push_back(std::make_tuple(currKey, currVal));                
+                    if (currVal != TOMBSTONE) {
+                        output.push_back(std::make_tuple(currKey, currVal));  
+                    }   
                     break;
                 }
             }
