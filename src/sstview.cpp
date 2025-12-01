@@ -20,7 +20,7 @@ bool SSTView::checkForKey(uint64_t key) {
     uint64_t numLeafPages = CALC_NUM_PAGES(numKeys * 2, UINT64_SIZE);
 
     BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
-    return true;//bloomFilter.checkKey(key);
+    return bloomFilter.checkKey(key);
 }
 
 void SSTView::findPage(uint64_t key) {
