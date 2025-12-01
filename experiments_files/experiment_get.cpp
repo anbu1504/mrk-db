@@ -70,6 +70,7 @@ void getThroughput() {
     std::cout << "=== END CSV OUTPUT FOR GET THROUGHPUT ===\n\n";
     std::cout << "Binary Search vs. B-Tree Search Experiment Has Ended!\n" << std::endl;
     std::cout << "Get Throughput Experiment Has Ended!\n" << std::endl;
+    std::cout << "CSV File can also be found at experiment_results/get_throughput.csv\n" << std::endl;
 }
 
 int main() {

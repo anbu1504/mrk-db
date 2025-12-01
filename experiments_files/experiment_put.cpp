@@ -58,6 +58,7 @@ void putThroughput() {
     std::cout << "\n\n" << std::endl;
     std::cout << "=== END CSV OUTPUT FOR PUT THROUGHPUT ===\n\n";
     std::cout << "Put Throughput Experiment Has Ended!\n" << std::endl;
+    std::cout << "CSV File can also be found at experiment_results/put_throughput.csv\n" << std::endl;
 }
 
 int main() {

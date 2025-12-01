@@ -53,8 +53,15 @@ void binSearchVsBTreeSearch() {
 
         uint64_t throughputBinary = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
-                uint64_t key = rng() % size;
-                dbBin.Get(key);
+                if (rng() % 2 == 0) {
+                    uint64_t key1 = rng() % size;
+                    uint64_t key2 = rng() % size;
+                    if (key1 > key2) std::swap(key1, key2);
+                    dbBin.Scan(key1, key2 + 1);
+                } else {
+                    uint64_t key = rng() % size;
+                    dbBin.Get(key);
+                }
             }
         });
 
@@ -85,6 +92,7 @@ void binSearchVsBTreeSearch() {
     std::cout << "\n\n" << std::endl;
     std::cout << "=== END CSV OUTPUT FOR BINARY SEARCH VS. BTREE ===\n\n";
     std::cout << "Binary Search vs. B-Tree Search Experiment Has Ended!\n" << std::endl;
+    std::cout << "CSV File can also be found at experiment_results/bin_vs_btree.csv\n" << std::endl;
 }
 
 int main() {

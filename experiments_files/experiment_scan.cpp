@@ -64,6 +64,7 @@ void scanThroughput() {
     std::cout << "\n\n" << std::endl;
     std::cout << "=== END CSV OUTPUT FOR SCAN THROUGHPUT ===\n\n";
     std::cout << "Scan Throughput Experiment Has Ended!\n" << std::endl;
+    std::cout << "CSV File can also be found at experiment_results/scan_throughput.csv\n" << std::endl;
 }
 
 int main() {
