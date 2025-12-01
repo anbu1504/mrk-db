@@ -30,5 +30,19 @@ typedef std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata;
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;
 typedef uint64_t PageBuffer[UINT64S_PER_PAGE];
 
+/**
+ * @brief Binary search with custom comparator.
+ *
+ * @param lo Lower bound index (inclusive)
+ * @param hi Upper bound index (inclusive)
+ * @param comparator Function returning -1, 0, or 1 to guide search
+ */
 uint64_t binSearch(uint64_t lo, uint64_t hi, const std::function<int(uint64_t)>& comparator);
+
+/**
+ * @brief Calculates how many items are in a given page if the items are stored contiguously.
+ *
+ * @param numKeys Total number of keys in the SST
+ * @param pageNum Page number being queried
+ */
 uint64_t calcNumItemsInPage(uint64_t numKeys, uint64_t pageNum);
