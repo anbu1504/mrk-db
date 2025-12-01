@@ -138,10 +138,10 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
             if (bufferOneRead[currKeyIndOne] <= bufferTwoRead[currKeyIndTwo]) {
                 bufferOut[currKeyIndOut] = bufferOneRead[currKeyIndOne];          // Place key in output
                 bufferOut[currKeyIndOut + 1] = bufferOneRead[currKeyIndOne + 1];  // Place value in output
-                currKeyIndOne = currKeyIndOne + 2;
                 if (bufferOneRead[currKeyIndOne] == bufferTwoRead[currKeyIndTwo]) {
                     currKeyIndTwo = currKeyIndTwo + 2;
                 }
+                currKeyIndOne = currKeyIndOne + 2;
             } else {
                 bufferOut[currKeyIndOut] = bufferTwoRead[currKeyIndTwo];          // Place key in output
                 bufferOut[currKeyIndOut + 1] = bufferTwoRead[currKeyIndTwo + 1];  // Place value in output

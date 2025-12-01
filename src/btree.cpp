@@ -105,7 +105,6 @@ void BTree::createBTree(std::vector<uint64_t>* memtableData) {
         childLayerSize = layerSizes[layerNum];
     }
 
-    // TODO: remember to delete the temp file here if memtableData was empty!!
     if (memtableData->empty()) {
         bufPool->bdelete(LAYER_DATA_NUM);
     }

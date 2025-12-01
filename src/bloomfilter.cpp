@@ -21,15 +21,16 @@ void BloomFilter::addKey(uint64_t key) {
     for (uint64_t hashSeed = 0; hashSeed < numHashFunctions; hashSeed++) {
         uint64_t hashValue = XXHash64::hash(&key, sizeof(uint64_t), hashSeed) % totalBits;
 
-        uint64_t pageNum = hashValue / (UINT64S_PER_PAGE * UINT64_SIZE_BITS);
-        uint64_t wordIndex = (hashValue / UINT64_SIZE_BITS) % UINT64S_PER_PAGE;
-        uint64_t bitNumber = hashValue % UINT64_SIZE_BITS;
+        uint64_t pageNum = hashValue / UINT64S_PER_PAGE;  // which page I should go to
+        uint64_t intArrive = pageNum % UINT64S_PER_PAGE;  // which uint64_t should I go to
+
+        uint64_t bitNumber = hashValue % UINT64_SIZE_BITS;  // the actual bit to arrive at
 
         // read the page first
         bufPool->bread(sstNum, pageOffset + pageNum, pageBuf);
 
         // set the bit
-        pageBuf[wordIndex] |= (1ULL << bitNumber);
+        pageBuf[intArrive] |= (1ULL << bitNumber);
 
         // write updated page
         bufPool->bwrite(sstNum, pageOffset + pageNum, pageBuf);
