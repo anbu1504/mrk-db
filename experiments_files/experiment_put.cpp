@@ -26,27 +26,27 @@ void putThroughput() {
     std::ofstream csv("experiment_results/put_throughput.csv");
 
     csv << "data_size,throughput_ops_per_sec\n" << std::endl;
+    std::string dbName = "exp_put";
+    std::filesystem::remove_all(dbName);
+
+    DB db;
+    db.Open(dbName);  // search method irrelevant for put
 
     for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
-        std::string dbName = "exp_put_" + std::to_string(size);
-        std::filesystem::remove_all(dbName);
-
-        DB db;
-        db.Open(dbName);  // search method irrelevant for put
 
         uint64_t throughputPut = throughput([&]() {
-            for (uint64_t i = 0; i < size; i++) {
+            for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
                 db.Put(i, i);
             }
         });
 
         csv << size << "," << throughputPut << std::endl;
 
-        db.Close();
-        std::filesystem::remove_all(dbName);
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
+    db.Close();
+    std::filesystem::remove_all(dbName);
     csv.close();
     std::ifstream in("experiment_results/put_throughput.csv");
     std::cout << "\n=== CSV OUTPUT FOR PUT THROUGHPUT ===\n\n" << std::endl;
