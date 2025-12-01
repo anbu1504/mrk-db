@@ -28,9 +28,6 @@ void getThroughput() {
     csv << "data_size,throughput_ops_per_sec\n" << std::endl;
 
     std::mt19937_64 rng(42);
-    std::vector<uint64_t> sizes = {
-        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
-        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
     
     std::string dbName = "exp_get";
     std::filesystem::remove_all(dbName);
@@ -38,7 +35,7 @@ void getThroughput() {
     DB db;
     db.Open(dbName, useBTreeSearch=true);
 
-    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 2 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
+    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
         // Preload DB

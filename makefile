@@ -19,8 +19,8 @@ LIB_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 TEST_MAIN = $(TEST_DIR)/mrkdb_tests.cpp
 
 EXPERIMENT_SEARCH = $(EXPERIMENTS_DIR)/experiment_bin_search_btree.cpp
-EXPERIMENT_PUT = $(EXPERIMENTS_DIR)/experiment_get.cpp
-EXPERIMENT_GET = $(EXPERIMENTS_DIR)/experiment_put.cpp
+EXPERIMENT_PUT = $(EXPERIMENTS_DIR)/experiment_put.cpp
+EXPERIMENT_GET = $(EXPERIMENTS_DIR)/experiment_get.cpp
 EXPERIMENT_SCAN = $(EXPERIMENTS_DIR)/experiment_scan.cpp
 
 LIB_OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(LIB_SOURCES))
@@ -89,4 +89,4 @@ $(BUILD_DIR)/experiment_scan.o: $(EXPERIMENTS_DIR)/experiment_scan.cpp
 .PHONY: all clean
 
 clean:
-	rm -rf $(BUILD_DIR) $(EXECUTABLE) $(TEST_DB) tests experiments experiments_bin_search_btree experiments_get experiments_put experiments_scan
+	rm -rf $(BUILD_DIR) $(EXECUTABLE) $(TEST_DB) tests experiments experiments_bin_search_btree experiments_get experiments_put experiments_scan exp_scan exp_db_bin exp_db_btree exp_put exp_get

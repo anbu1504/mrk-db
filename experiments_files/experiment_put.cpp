@@ -27,11 +27,7 @@ void putThroughput() {
 
     csv << "data_size,throughput_ops_per_sec\n" << std::endl;
 
-    std::vector<uint64_t> sizes = {
-        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
-        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
-
-    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 2 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
+    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
         std::string dbName = "exp_put_" + std::to_string(size);
         std::filesystem::remove_all(dbName);

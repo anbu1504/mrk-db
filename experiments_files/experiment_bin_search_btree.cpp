@@ -25,9 +25,6 @@ void binSearchVsBTreeSearch() {
     std::mt19937_64 rng(42);  // fixed seed for reproducibility
     // 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000, 50_000_000, 100_000_000,
     // 500_000_000, 625_000_000
-    std::vector<uint64_t> sizes = {
-        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
-        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
 
     std::ofstream csv("experiment_results/bin_vs_btree.csv");
 
@@ -44,7 +41,7 @@ void binSearchVsBTreeSearch() {
     DB dbBTree;
     dbBTree.Open(dbNameBTree, useBTreeSearch=true);  // B-tree search
 
-    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 2 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
+    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
         for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
