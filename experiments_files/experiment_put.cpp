@@ -1,4 +1,11 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+#include <functional>
+#include <fstream>
+#include <cstdint>
+#include <filesystem>
 
 #include <filesystem>
 #include <random>
@@ -7,7 +14,7 @@
 
 using namespace std::chrono;
 
-static const uint64_t NUM_OPS = 1000;
+static const uint64_t NUM_OPS = 100;
 #define ONE_MB 1048576 //1MB in bytes
 #define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
 #define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
@@ -18,7 +25,7 @@ uint64_t throughput(std::function<void()> fn) {
     fn();
     auto end = high_resolution_clock::now();
     double sec = duration<double>(end - start).count();
-    return (uint64_t)(NUM_OPS / sec);
+    return (uint64_t)(ONETWENTYEIGHT_MB_KV / sec);
 }
 
 void putThroughput() {
