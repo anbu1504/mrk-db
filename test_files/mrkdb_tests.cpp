@@ -592,9 +592,9 @@ class DBTester {
         
     
         // Make sure data is still there
-        assert(db2.Get(1) == 1);
-        assert(db2.Get(2 * THRESHOLD + 51) == 2 * THRESHOLD + 51);
-        assert(db2.Get(THRESHOLD + 2213) == THRESHOLD + 2213);
+        assert(db2.Get(1).value() == 1);
+        assert(db2.Get(2 * THRESHOLD + 51).value() == 2 * THRESHOLD + 51);
+        assert(db2.Get(THRESHOLD + 2213).value() == THRESHOLD + 2213);
 
         db2.Close();
         std::filesystem::remove_all(testDB);
@@ -655,7 +655,7 @@ class DBTester {
         db.Delete(10);
 
         auto res = db.Get(10);
-        assert(res == TOMBSTONE);
+        assert(res == std::nullopt);
 
         std::cout << "DB::testDBDeleteMemtable() test passed!" << std::endl;
     }
@@ -677,7 +677,7 @@ class DBTester {
         
         auto res = db.Get((6 * THRESHOLD) + 67);
 
-        assert(res == TOMBSTONE);
+        assert(res == std::nullopt);
         std::cout << "DB::testDBDeleteSST() test passed!" << std::endl;
     }
 
@@ -699,7 +699,7 @@ class DBTester {
         
         auto res = db.Get((7 * THRESHOLD) + 76);
 
-        assert(res == TOMBSTONE);
+        assert(res == std::nullopt);
         std::cout << "DB::testDBDeletesTwice() test passed!" << std::endl;
     }
 
@@ -718,7 +718,7 @@ class DBTester {
 
         auto res = db.Get(5);
 
-        assert(res == 999);
+        assert(res.value() == 999);
         std::cout << "DB::testDBDeleteReinsert() test passed!" << std::endl;
     }
 
@@ -745,10 +745,10 @@ class DBTester {
         auto res3 = db.Get((6 * THRESHOLD) + 67);
         auto res4 = db.Get((7 * THRESHOLD) + 6768);
 
-        assert(res1 == TOMBSTONE);
-        assert(res2 == TOMBSTONE);
-        assert(res3 == TOMBSTONE);
-        assert(res4 == TOMBSTONE);
+        assert(res1 == std::nullopt);
+        assert(res2 == std::nullopt);
+        assert(res3 == std::nullopt);
+        assert(res4 == std::nullopt);
         std::cout << "DB::testDBMultipleDeletes() test passed!" << std::endl;
     }
 
@@ -779,10 +779,10 @@ class DBTester {
         auto res3 = db.Get((6 * THRESHOLD) + 67);
         auto res4 = db.Get((7 * THRESHOLD) + 6768);
 
-        assert(res1 == TOMBSTONE);
-        assert(res2 == TOMBSTONE);
-        assert(res3 == TOMBSTONE);
-        assert(res4 == TOMBSTONE);
+        assert(res1 == std::nullopt);
+        assert(res2 == std::nullopt);
+        assert(res3 == std::nullopt);
+        assert(res4 == std::nullopt);
         std::cout << "DB::testDBMultipleDeletesDeeper() test passed!" << std::endl;
     }
 
@@ -803,10 +803,10 @@ class DBTester {
         auto resv3 = db.Get((6 * THRESHOLD) + 67);
         auto resv4 = db.Get((7 * THRESHOLD) + 6768);
 
-        assert((resv1 = (4 * THRESHOLD) + 23));
-        assert((resv2 = (5 * THRESHOLD) + 999));
-        assert((resv3 = (6 * THRESHOLD) + 67));
-        assert((resv4 = (7 * THRESHOLD) + 6768));
+        assert((resv1.value() = (4 * THRESHOLD) + 23));
+        assert((resv2.value() = (5 * THRESHOLD) + 999));
+        assert((resv3.value() = (6 * THRESHOLD) + 67));
+        assert((resv4.value() = (7 * THRESHOLD) + 6768));
 
         db.Delete((4 * THRESHOLD) + 23);
         db.Delete((5 * THRESHOLD) + 999);
@@ -822,10 +822,10 @@ class DBTester {
         auto res3 = db2.Get((6 * THRESHOLD) + 67);
         auto res4 = db2.Get((7 * THRESHOLD) + 6768);
 
-        assert(res1 == TOMBSTONE);
-        assert(res2 == TOMBSTONE);
-        assert(res3 == TOMBSTONE);
-        assert(res4 == TOMBSTONE);
+        assert(res1 == std::nullopt);
+        assert(res2 == std::nullopt);
+        assert(res3 == std::nullopt);
+        assert(res4 == std::nullopt);
 
         std::cout << "DB::testDBPersistentDeletes() test passed!" << std::endl;
     }
