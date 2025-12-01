@@ -39,7 +39,7 @@ void getThroughput() {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
         // Preload DB
-        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             db.Put(i, i);
         }
 
@@ -50,7 +50,7 @@ void getThroughput() {
             }
         });
 
-        csv << size << "," << throughputGet << "\n";
+        csv << size << "," << throughputGet << std::endl;
 
         db.Close();
         std::filesystem::remove_all(dbName);

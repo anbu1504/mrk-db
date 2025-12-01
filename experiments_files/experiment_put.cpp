@@ -41,7 +41,7 @@ void putThroughput() {
             }
         });
 
-        csv << size << "," << throughputPut << "\n" << std::endl;
+        csv << size << "," << throughputPut << std::endl;
 
         db.Close();
         std::filesystem::remove_all(dbName);

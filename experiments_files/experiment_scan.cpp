@@ -37,7 +37,7 @@ void scanThroughput() {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
         // Preload
-        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) db.Put(i, i);
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) db.Put(i, i);
 
         uint64_t throughputScan = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
@@ -47,7 +47,7 @@ void scanThroughput() {
             }
         });
 
-        csv << size << "," << throughputScan << "\n" << std::endl;
+        csv << size << "," << throughputScan << std::endl;
 
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
 

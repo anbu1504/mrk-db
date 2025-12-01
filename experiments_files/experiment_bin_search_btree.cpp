@@ -44,10 +44,10 @@ void binSearchVsBTreeSearch() {
     for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
-        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
+        rng.seed(size);
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             dbBin.Put(i, i);
         }
-
         uint64_t throughputBinary = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
                 if (rng() % 2 == 0) {
@@ -62,18 +62,26 @@ void binSearchVsBTreeSearch() {
             }
         });
 
-        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
+        rng.seed(size);
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             dbBTree.Put(i, i);
         }
 
         uint64_t throughputBTree = throughput([&]() {
-            for (uint64_t i = 0; i < NUM_OPS; i++) {
-                uint64_t key = rng() % size;
-                dbBTree.Get(key);
+           for (uint64_t i = 0; i < NUM_OPS; i++) {
+                if (rng() % 2 == 0) {
+                    uint64_t key1 = rng() % size;
+                    uint64_t key2 = rng() % size;
+                    if (key1 > key2) std::swap(key1, key2);
+                    dbBTree.Scan(key1, key2 + 1);
+                } else {
+                    uint64_t key = rng() % size;
+                    dbBTree.Get(key);
+                }
             }
         });
 
-        csv << size << "," << throughputBinary << "," << throughputBTree << "\n";
+        csv << size << "," << throughputBinary << "," << throughputBTree << std::endl;
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
 
