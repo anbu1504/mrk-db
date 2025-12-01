@@ -69,7 +69,7 @@ void BufferPool::bdelete(uint64_t sstNum) {
 
 void BufferPool::evictAllPages() {
     uint64_t hPageNum = 0;
-    for (uint64_t visitedPages = 0; visitedPages < cacheSize; visitedPages++) {
+    while (numCachedPages > 0) {
         if (hashTable[hPageNum].cachedPage) {
             // If we found an existing page, evict that page. If a backshift occurred, then
             // keep hPageNum the same. Otherwise, move onto the next page.
@@ -77,6 +77,7 @@ void BufferPool::evictAllPages() {
         } else {
             hPageNum++;
         }
+        hPageNum %= cacheSize;  // wrap around to catch entries shifted from end to start
     }
 }
 
