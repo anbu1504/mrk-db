@@ -50,6 +50,8 @@ void scanThroughput() {
 
         db.Close();
         std::filesystem::remove_all(dbName);
+        std::cout << "Size: " << size << " completed!" << std::endl;
+
     }
     csv.close();
     std::ifstream in("experiment_results/scan_throughput.csv");

@@ -72,6 +72,7 @@ void binSearchVsBTreeSearch() {
         std::filesystem::remove_all(dbNameBTree);
 
         csv << size << "," << throughputBinary << "," << throughputBTree << "\n";
+        std::cout << "Size: " << size << " completed!" << std::endl;
     }
 
     csv.close();

@@ -52,6 +52,7 @@ void getThroughput() {
 
         db.Close();
         std::filesystem::remove_all(dbName);
+        std::cout << "Size: " << size << " completed!" << std::endl;
     }
     csv.close();
 
