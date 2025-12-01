@@ -4,6 +4,10 @@ build/*
 experiment_results/*
 tests
 experiments
+experiments_bin_search_btree
+experiments_get
+experiments_put
+experiments_scan
 testdb
 exp_db_bin_*
 exp_db_btree_*
