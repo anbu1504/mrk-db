@@ -33,12 +33,14 @@ void SSTWriter::writeMiniSST(std::vector<uint64_t>* memtableData) {
         bufPool->bwrite(sstNum, pageNum, pageBuf);
     }
 
-    BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
-    bloomFilter.wipePages();
-    bloomFilter.addMultiKeys(memtableData);
+    if (sstNum < TEMP_THRESHOLD) {
+        BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
+        bloomFilter.wipePages();
+        bloomFilter.addMultiKeys(memtableData);
 
-    BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
-    bTree.createBTree(memtableData);
+        BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
+        bTree.createBTree(memtableData);
+    }
 }
 
 void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
@@ -50,7 +52,9 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
     uint64_t numFilterPages = CEIL_DIV(numKeys * bitsPerEntry, PAGE_SIZE * 8);
 
     BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
-    bloomFilter.wipePages();
+    if (sstNum < TEMP_THRESHOLD) {
+        bloomFilter.wipePages();
+    }
 
     PageBuffer pageBuf;
     uint64_t pageNum = 0;
@@ -73,7 +77,9 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
         if (currKeyIdx == numKeys - 1) {
             maxKey = currKey;
         }
-        bloomFilter.addKey(currKey);
+        if (sstNum < TEMP_THRESHOLD) {
+            bloomFilter.addKey(currKey);
+        }
     }
 
     std::fill(pageBuf, pageBuf + UINT64S_PER_PAGE, 0);
@@ -83,9 +89,11 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
 
     bufPool->bwrite(sstNum, 0, pageBuf);
 
-    BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
-    std::vector<uint64_t> emptyVec;
-    bTree.createBTree(&emptyVec);
+    if (sstNum < TEMP_THRESHOLD) {
+        BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
+        std::vector<uint64_t> emptyVec;
+        bTree.createBTree(&emptyVec);
+    }
 }
 
 uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
