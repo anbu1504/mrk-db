@@ -28,8 +28,8 @@ class DB {
      * @param dbName Name of the database to open/create (if it doesn't already exist)
      */
 
-    int Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 12, uint64_t cacheSizeValue = 4096,
-             uint64_t memtableThresholdValue = 16384);
+    int Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 8,
+             uint64_t cacheSizeValue = 2560, uint64_t memtableThresholdValue = 65536);
 
     /**
      * @brief Stores a key associated with a value.

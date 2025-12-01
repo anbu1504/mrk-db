@@ -1,14 +1,16 @@
 #include "../include/bufferpool.hpp"
 
-#include "../external/xxhash64.h"
+#include <assert.h>
+#include <sys/fcntl.h>
+#include <unistd.h>
 
 #include <cstring>
-#include <unistd.h>
-#include <sys/fcntl.h>
-#include <assert.h>
 #include <iomanip>
 
-BufferPool::BufferPool(std::string dbName) : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
+#include "../external/xxhash64.h"
+
+BufferPool::BufferPool(std::string dbName)
+    : dbName(dbName), numCachedPages(0), clockHandle(0), hashTable(cacheSize, HPage()) {}
 
 BufferPool::~BufferPool() {
     for (uint64_t hPageNum = 0; hPageNum < cacheSize; hPageNum++) {
@@ -82,7 +84,8 @@ void BufferPool::evictAllPages() {
 HPage* BufferPool::cacheGet(std::string pageID) {
     uint64_t cacheIdx = XXHash64::hash(pageID.data(), pageID.size(), 0) % cacheSize;
     uint64_t currProbeSeqLen = 0;
-    while (hashTable[cacheIdx].cachedPage && !(hashTable[cacheIdx].pageID == pageID) && !(currProbeSeqLen > hashTable[cacheIdx].probeSeqLen)) {
+    while (hashTable[cacheIdx].cachedPage && !(hashTable[cacheIdx].pageID == pageID) &&
+           !(currProbeSeqLen > hashTable[cacheIdx].probeSeqLen)) {
         cacheIdx = (cacheIdx + 1) % cacheSize;
         currProbeSeqLen++;
     }
@@ -97,21 +100,21 @@ HPage* BufferPool::cacheGet(std::string pageID) {
 
 void BufferPool::cachePut(std::string pageID, PageBuffer pageBuf, bool dirty) {
     HPage* getAttempt = cacheGet(pageID);
-    if (getAttempt) { // If the page already exists, update it
+    if (getAttempt) {  // If the page already exists, update it
         memcpy(getAttempt->cachedPage, pageBuf, PAGE_SIZE);
-        getAttempt->dirtyBit = dirty; // refBit should also be true
+        getAttempt->dirtyBit = dirty;  // refBit should also be true
         return;
     }
 
     runClockIfFull();
 
-    uint64_t* newPage = (uint64_t*) aligned_alloc(PAGE_SIZE, PAGE_SIZE);
+    uint64_t* newPage = (uint64_t*)aligned_alloc(PAGE_SIZE, PAGE_SIZE);
     memcpy(newPage, pageBuf, PAGE_SIZE);
 
     HPage tempHPage = HPage(pageID, dirty, true, 0, newPage);
 
     uint64_t cacheIdx = XXHash64::hash(pageID.data(), pageID.size(), 0) % cacheSize;
-    while (hashTable[cacheIdx].cachedPage) { // While we keep bumping into existing entries
+    while (hashTable[cacheIdx].cachedPage) {  // While we keep bumping into existing entries
 
         if (tempHPage.probeSeqLen > hashTable[cacheIdx].probeSeqLen) {
             std::swap(hashTable[cacheIdx], tempHPage);

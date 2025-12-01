@@ -1,7 +1,7 @@
 #include "../include/mrkdb.hpp"
 
-#include <filesystem>
 #include <cassert>
+#include <filesystem>
 #include <iostream>
 
 int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPerEntryValue, uint64_t cacheSizeValue,
@@ -25,7 +25,6 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
 
         delete bufPoolTemp;
         bufPoolTemp = nullptr;
-
 
         std::vector<uint64_t> levels;
 

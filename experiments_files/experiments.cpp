@@ -1,174 +1,200 @@
-// #include <bits/stdc++.h>
-// #include <random>
-// #include <filesystem>
+#include <bits/stdc++.h>
 
-// #include "../include/mrkdb.hpp"
+#include <filesystem>
+#include <random>
 
-// using namespace std::chrono;
+#include "../include/mrkdb.hpp"
 
-// static const uint64_t NUM_OPS = 50000;
+using namespace std::chrono;
 
-// uint64_t throughput(std::function<void()> fn) {
-//     auto start = high_resolution_clock::now();
-//     fn();
-//     auto end = high_resolution_clock::now();
-//     double sec = duration<double>(end - start).count();
-//     return (uint64_t)(NUM_OPS / sec);
-// }
+static const uint64_t NUM_OPS = 50000;
 
+uint64_t throughput(std::function<void()> fn) {
+    auto start = high_resolution_clock::now();
+    fn();
+    auto end = high_resolution_clock::now();
+    double sec = duration<double>(end - start).count();
+    return (uint64_t)(NUM_OPS / sec);
+}
 
-// void binSearchVsBTreeSearch() {
-//     std::mt19937_64 rng(42); // fixed seed for reproducibility
-//     std::vector<uint64_t> sizes = {1000, 10000, 50000, 100000, 300000};
+void binSearchVsBTreeSearch() {
+    std::cout << "Binary Search vs. B-Tree Search Experiment Has Started!" << std::endl;
+    std::mt19937_64 rng(42);  // fixed seed for reproducibility
+    // 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000, 50_000_000, 100_000_000,
+    // 500_000_000, 625_000_000
+    std::vector<uint64_t> sizes = {
+        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
+        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
 
-//     std::ofstream csv("bin_vs_btree.csv");
+    std::ofstream csv("experiment_results/bin_vs_btree.csv");
 
-//     csv << "data_size,structure,throughput_ops_per_sec\n" << std::endl;
+    csv << "data_size,bin_search_throughput_ops_per_sec,btree_search_throughput_ops_per_sec\n";
 
-//     for (uint64_t size : sizes) {
-//         std::string dbNameBin = "exp_db_bin_" + std::to_string(size);
-//         std::filesystem::remove_all(dbNameBin);
-        
-//         DB dbBin;
-//         dbBin.Open(dbNameBin, false); // use binary search
+    for (uint64_t size : sizes) {
+        std::string dbNameBin = "exp_db_bin_" + std::to_string(size);
+        std::filesystem::remove_all(dbNameBin);
 
-//         for (uint64_t i = 0; i < size; i++) {
-//             dbBin.Put(i, i);
-//         }
+        DB dbBin;
+        dbBin.Open(dbNameBin, false);  // binary search
 
-//         uint64_t throughputBinary = throughput([&]() {
-//             for (uint64_t i = 0; i < NUM_OPS; i++) {
-//                 uint64_t key = rng() % size;
-//                 dbBin.Get(key);
-//             }
-//         });
+        for (uint64_t i = 0; i < size; i++) {
+            dbBin.Put(i, i);
+        }
 
-//         csv << size << ",binary_search," << throughputBinary << "\n" << std::endl;
-//         dbBin.Close();
-//         std::filesystem::remove_all(dbNameBin);
+        uint64_t throughputBinary = throughput([&]() {
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t key = rng() % size;
+                dbBin.Get(key);
+            }
+        });
 
-//         std::string dbNameBTree = "exp_db_btree_" + std::to_string(size);
-//         std::filesystem::remove_all(dbNameBTree);
+        dbBin.Close();
+        std::filesystem::remove_all(dbNameBin);
 
-//         DB dbBTree;
-//         dbBTree.Open(dbNameBTree, true); // use B-tree search
+        std::string dbNameBTree = "exp_db_btree_" + std::to_string(size);
+        std::filesystem::remove_all(dbNameBTree);
 
-//         uint64_t throughputBTree = throughput([&]() {
-//             for (uint64_t i = 0; i < NUM_OPS; i++) {
-//                 uint64_t key = rng() % size;
-//                 dbBTree.Get(key);
-//             }
-//         });
+        DB dbBTree;
+        dbBTree.Open(dbNameBTree, true);  // B-tree search
 
-//         csv << size << ",btree_search," << throughputBTree<< "\n" << std::endl;
-//         dbBTree.Close();
-//         std::filesystem::remove_all(dbNameBTree);
-//     }
-//     csv.close();
-// }
+        for (uint64_t i = 0; i < size; i++) {
+            dbBTree.Put(i, i);
+        }
 
-// void putThroughput() {
-//     std::ofstream csv("put_throughput.csv");
+        uint64_t throughputBTree = throughput([&]() {
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t key = rng() % size;
+                dbBTree.Get(key);
+            }
+        });
 
-//     csv << "data_size,operation,throughput_ops_per_sec\n" << std::endl;
+        dbBTree.Close();
+        std::filesystem::remove_all(dbNameBTree);
 
-//     std::vector<uint64_t> sizes = {50000, 100000, 200000};
+        csv << size << "," << throughputBinary << "," << throughputBTree << "\n";
+    }
 
-//     for (uint64_t size : sizes) {
-//         std::string dbName = "exp_put_" + std::to_string(size);
-//         std::filesystem::remove_all(dbName);
+    csv.close();
+    std::cout << "Binary Search vs. B-Tree Search Experiment Has Ended!\n" << std::endl;
+}
 
-//         DB db;
-//         db.Open(dbName, false);  // search method irrelevant for put
+void putThroughput() {
+    std::cout << "Put Throughput Experiment Has Started!" << std::endl;
+    std::ofstream csv("experiment_results/put_throughput.csv");
 
-//         uint64_t throughputPut = throughput([&]() {
-//             for (uint64_t i = 0; i < NUM_OPS; i++) {
-//                 uint64_t key = i % size;
-//                 db.Put(key, key);
-//             }
-//         });
+    csv << "data_size,throughput_ops_per_sec\n" << std::endl;
 
-//         csv << size << ",put," << throughputPut << "\n" << std::endl;
+    std::vector<uint64_t> sizes = {
+        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
+        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
 
-//         db.Close();
-//         std::filesystem::remove_all(dbName);
-//     }
-//     csv.close();
-// }
+    for (uint64_t size : sizes) {
+        std::string dbName = "exp_put_" + std::to_string(size);
+        std::filesystem::remove_all(dbName);
 
-// void getThroughput() {
-//     std::ofstream csv("get_throughput.csv");
+        DB db;
+        db.Open(dbName, false);  // search method irrelevant for put
 
-//     csv << "data_size,operation,throughput_ops_per_sec\n" << std::endl;
+        uint64_t throughputPut = throughput([&]() {
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t key = i % size;
+                db.Put(key, key);
+            }
+        });
 
-//     std::mt19937_64 rng(42);
-//     std::vector<uint64_t> sizes = {50000, 100000, 200000};
+        csv << size << "," << throughputPut << "\n" << std::endl;
 
-//     for (uint64_t size : sizes) {
-//         std::string dbName = "exp_get_" + std::to_string(size);
-//         std::filesystem::remove_all(dbName);
+        db.Close();
+        std::filesystem::remove_all(dbName);
+    }
+    csv.close();
+    std::cout << "Put Throughput Experiment Has Ended!\n" << std::endl;
+}
 
-//         DB db;
-//         db.Open(dbName, true);
+void getThroughput() {
+    std::cout << "Get Throughput Experiment Has Started!" << std::endl;
 
-//         // Preload DB
-//         for (uint64_t i = 0; i < size; i++) {
-//             db.Put(i, i);
-//         }
+    std::ofstream csv("experiment_results/get_throughput.csv");
 
-//         uint64_t throughputGet = throughput([&]() {
-//             for (uint64_t i = 0; i < NUM_OPS; i++) {
-//                 uint64_t key = rng() % size;
-//                 db.Get(key);
-//             }
-//         });
+    csv << "data_size,throughput_ops_per_sec\n" << std::endl;
 
-//         csv << size << ",get," << throughputGet << "\n";
+    std::mt19937_64 rng(42);
+    std::vector<uint64_t> sizes = {
+        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
+        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
 
-//         db.Close();
-//         std::filesystem::remove_all(dbName);
-//     }
-//     csv.close();
-// }
+    for (uint64_t size : sizes) {
+        std::string dbName = "exp_get_" + std::to_string(size);
+        std::filesystem::remove_all(dbName);
 
-// void scanThroughput() {
-//     std::ofstream csv("scan_throughput.csv");
+        DB db;
+        db.Open(dbName, true);
 
-//     csv << "data_size,operation,throughput_ops_per_sec\n" << std::endl;
+        // Preload DB
+        for (uint64_t i = 0; i < size; i++) {
+            db.Put(i, i);
+        }
 
-//     std::mt19937_64 rng(42);
-//     std::vector<uint64_t> sizes = {50000, 100000, 200000};
+        uint64_t throughputGet = throughput([&]() {
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t key = rng() % size;
+                db.Get(key);
+            }
+        });
 
-//     for (uint64_t size : sizes) {
-//         std::string dbName = "exp_scan_" + std::to_string(size);
-//         std::filesystem::remove_all(dbName);
+        csv << size << "," << throughputGet << "\n";
 
-//         DB db;
-//         db.Open(dbName, true);
+        db.Close();
+        std::filesystem::remove_all(dbName);
+    }
+    csv.close();
 
-//         // Preload
-//         for (uint64_t i = 0; i < size; i++)
-//             db.Put(i, i);
+    std::cout << "Get Throughput Experiment Has Ended!\n" << std::endl;
+}
 
-//         uint64_t throughputScan = throughput([&]() {
-//             for (uint64_t i = 0; i < NUM_OPS; i++) {
-//                 uint64_t a = rng() % (size - 500);
-//                 uint64_t b = a + 500;
-//                 db.Scan(a, b);
-//             }
-//         });
+void scanThroughput() {
+    std::cout << "Scan Throughput Experiment Has Started!" << std::endl;
+    std::ofstream csv("experiment_results/scan_throughput.csv");
 
-//         csv << size << ",scan," << throughputScan << "\n" << std::endl;
+    csv << "data_size,throughput_ops_per_sec\n" << std::endl;
 
-//         db.Close();
-//         std::filesystem::remove_all(dbName);
-//     }
-//     csv.close();
-// }
+    std::mt19937_64 rng(42);
+    std::vector<uint64_t> sizes = {
+        1000,    5000,     10000,    50000,     100000,    500000,   1000000,
+        5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
 
-// int main() {
-//     binSearchVsBTreeSearch();
-//     putThroughput();
-//     getThroughput();
-//     scanThroughput();
-// }
+    for (uint64_t size : sizes) {
+        std::string dbName = "exp_scan_" + std::to_string(size);
+        std::filesystem::remove_all(dbName);
+
+        DB db;
+        db.Open(dbName, true);
+
+        // Preload
+        for (uint64_t i = 0; i < size; i++) db.Put(i, i);
+
+        uint64_t throughputScan = throughput([&]() {
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t a = rng() % (size - 500);
+                uint64_t b = a + 500;
+                db.Scan(a, b);
+            }
+        });
+
+        csv << size << "," << throughputScan << "\n" << std::endl;
+
+        db.Close();
+        std::filesystem::remove_all(dbName);
+    }
+    csv.close();
+    std::cout << "Scan Throughput Experiment Has Ended!\n" << std::endl;
+}
+
+int main() {
+    std::filesystem::remove_all("experiment_results");
+    std::filesystem::create_directory("experiment_results");
+    binSearchVsBTreeSearch();
+    putThroughput();
+    getThroughput();
+    scanThroughput();
+}

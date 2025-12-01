@@ -35,7 +35,7 @@ void SSTView::findPage(uint64_t key) {
     } else {
         // Binary search variables
         uint64_t lo = 1;
-        uint64_t hi = numLeafPages;
+        uint64_t hi = numLeafPages + 1;
 
         // uint64_t itemsRead;
         pageNum = binSearch(lo, hi, [&](uint64_t m) {
@@ -52,7 +52,6 @@ void SSTView::findPage(uint64_t key) {
     itemsRead = calcNumItemsInPage(numKeys, pageNum);
     keysRead = itemsRead / 2;  // itemsRead should not be 0!!!
     currKeyIdx = binSearch(0, keysRead - 1, [&](uint64_t m) {
-
         return (key < pageBuf[m * 2]) ? -1 : (key > pageBuf[m * 2]) ? 1 : 0;
     });
 }

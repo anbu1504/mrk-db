@@ -1,7 +1,6 @@
 #include "../include/constants.hpp"
 
-uint64_t binSearch(uint64_t lo, uint64_t hi,
-                   const std::function<int(uint64_t)>& cmp) {
+uint64_t binSearch(uint64_t lo, uint64_t hi, const std::function<int(uint64_t)>& cmp) {
     uint64_t result = lo;  // fallback (useful for floor semantics)
 
     while (lo <= hi) {
@@ -10,11 +9,11 @@ uint64_t binSearch(uint64_t lo, uint64_t hi,
 
         if (c < 0) {
             // key < mid -> move left
-            if (mid == 0) break;   // avoid underflow
+            if (mid == 0) break;  // avoid underflow
             hi = mid - 1;
         } else if (c > 0) {
             // key > mid -> move right
-            result = mid;          // best known floor position
+            result = mid;  // best known floor position
             lo = mid + 1;
         } else {
             // Found exact match

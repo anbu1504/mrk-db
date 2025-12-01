@@ -226,7 +226,7 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
     bufPool->bwrite(LAYER_DATA_NUM, currPageNumTemp, bufferTemp);
     currKeyIndTemp = 0;
     currPageNumTemp++;
-    
+
     bufPool->bdelete(sstNum1);
     bufPool->bdelete(sstNum2);
 

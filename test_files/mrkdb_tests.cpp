@@ -1,6 +1,6 @@
 #include <cassert>
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
 #include "../include/mrkdb.hpp"
 
@@ -30,7 +30,7 @@ class DBTester {
         // std::string name;
 
         // // Execute the 'ls' command
-        // int result = system("ls"); 
+        // int result = system("ls");
 
         // // Check the return value (0 usually indicates success)
         // if (result == 0) {
@@ -97,7 +97,6 @@ class DBTester {
 
         // PRINT("done getting");
 
-
         assert(val1.value() == 1);
         assert(val2.value() == 2);
         assert(val3.value() == 3);
@@ -112,7 +111,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -150,7 +149,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -181,7 +180,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -206,7 +205,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -231,7 +230,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -275,7 +274,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -307,7 +306,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -351,7 +350,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -363,12 +362,12 @@ class DBTester {
         }
 
         // 16384
-        uint64_t key1 = 2 * THRESHOLD + 2; // 32770
-        uint64_t key2 = 2 * THRESHOLD + 20; // 32788
-        uint64_t key3 = 4 * THRESHOLD + 2; // 65538
-        uint64_t key4 = 6 * THRESHOLD + 20; // 98324
-        uint64_t key5 = 7 * THRESHOLD + 2; // 114690
-        uint64_t key6 = THRESHOLD + 20; // 16404
+        uint64_t key1 = 2 * THRESHOLD + 2;   // 32770
+        uint64_t key2 = 2 * THRESHOLD + 20;  // 32788
+        uint64_t key3 = 4 * THRESHOLD + 2;   // 65538
+        uint64_t key4 = 6 * THRESHOLD + 20;  // 98324
+        uint64_t key5 = 7 * THRESHOLD + 2;   // 114690
+        uint64_t key6 = THRESHOLD + 20;      // 16404
 
         kvPairs res1 = db.Scan(key1, key2);
         // PRINT("after scan 1");
@@ -449,7 +448,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -470,8 +469,8 @@ class DBTester {
         kvPairs res2 = db.Scan(key3, key4);
 
         assert(res1.size() == 0);  // since keys are out of range
-        assert(res2.size() == 270); 
-        
+        assert(res2.size() == 270);
+
         bool found = false;
         for (size_t i = 0; i < res2.size(); i++) {
             const auto& t = res2[i];
@@ -481,10 +480,10 @@ class DBTester {
             if (std::get<0>(t) == 267) {
                 found = true;
             }
- 
+
             assert(k == v);
         }
-        assert(!found); // i.e. the number that was not added was not found in the resulting scan 
+        assert(!found);  // i.e. the number that was not added was not found in the resulting scan
 
         std::cout << "DB::ScanSSTDeeper() for sst empty test passed!" << std::endl;
 
@@ -496,7 +495,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -534,7 +533,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -551,7 +550,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -565,14 +564,14 @@ class DBTester {
     void testDBReopenGet() {
         const std::string testDB = "testdb";
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
-        
+        // std::filesystem::create_directory(testDB);
+
         DB db;
         db.Open(testDB);
-        
+
         // Insert enough to flush to SST
         uint64_t j = 0;
-        
+
         for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
             db.Put(i, j);
             j++;
@@ -581,8 +580,7 @@ class DBTester {
         db.Close();
         DB db2;
         db2.Open(testDB);
-        
-    
+
         // Make sure data is still there
         assert(db2.Get(1).value() == 1);
         assert(db2.Get(2 * THRESHOLD + 51).value() == 2 * THRESHOLD + 51);
@@ -596,7 +594,7 @@ class DBTester {
     void testDBScanGetMultipleKeysNotThere() {
         const std::string testDB = "testdb";
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -622,7 +620,7 @@ class DBTester {
             uint64_t v = std::get<1>(t);
 
             if (std::get<0>(t) % 2 != 0) {
-                oddFound = true; // since we didn't insert any odd key value pairs
+                oddFound = true;  // since we didn't insert any odd key value pairs
             }
 
             // the notion is that the key and values are the same as per how we inserted it
@@ -630,7 +628,7 @@ class DBTester {
             // for all returned things in our scan query
             assert(k == v);
         }
-        assert(!oddFound); // i.e. ensuring that no odd key value pairs were found
+        assert(!oddFound);  // i.e. ensuring that no odd key value pairs were found
         std::cout << "DB::testDBScanGetMultipleKeysNotThere() test passed!" << std::endl;
     }
 
@@ -638,7 +636,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -656,7 +654,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -666,7 +664,7 @@ class DBTester {
         }
 
         db.Delete((6 * THRESHOLD) + 67);
-        
+
         auto res = db.Get((6 * THRESHOLD) + 67);
 
         assert(res == std::nullopt);
@@ -677,7 +675,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -688,7 +686,7 @@ class DBTester {
 
         db.Delete((7 * THRESHOLD) + 76);
         db.Delete((7 * THRESHOLD) + 76);
-        
+
         auto res = db.Get((7 * THRESHOLD) + 76);
 
         assert(res == std::nullopt);
@@ -699,7 +697,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -718,7 +716,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -748,7 +746,7 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
+        // std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -782,7 +780,6 @@ class DBTester {
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);
-        //std::filesystem::create_directory(testDB);
 
         DB db;
         db.Open(testDB);
@@ -821,6 +818,198 @@ class DBTester {
 
         std::cout << "DB::testDBPersistentDeletes() test passed!" << std::endl;
     }
+
+    void testDBUpdatesMemtable() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        db.Put(10, 100);
+        db.Put(10, 200);
+
+        auto res = db.Get(10);
+        assert(res == 200);
+
+        std::cout << "DB::testDBUpdateMemtable() test passed!" << std::endl;
+    }
+
+    void testDBUpdatesTwice() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        // std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Put((7 * THRESHOLD) + 76, 2);
+        db.Put((7 * THRESHOLD) + 76, 44);
+
+        auto res = db.Get((7 * THRESHOLD) + 76);
+
+        assert(res == 44);
+        std::cout << "DB::testDBUpdatesTwice() test passed!" << std::endl;
+    }
+
+    void testDBMultipleUpdates() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        // std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Put((4 * THRESHOLD) + 23, 33);
+        db.Put((5 * THRESHOLD) + 999, 44);
+        db.Put((6 * THRESHOLD) + 67, 55);
+        db.Put((7 * THRESHOLD) + 6768, 66);
+
+        auto res1 = db.Get((4 * THRESHOLD) + 23);
+        auto res2 = db.Get((5 * THRESHOLD) + 999);
+        auto res3 = db.Get((6 * THRESHOLD) + 67);
+        auto res4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1.value() == 33);
+        assert(res2.value() == 44);
+        assert(res3.value() == 55);
+        assert(res4.value() == 66);
+        std::cout << "DB::testDBMultipleUpdates() test passed!" << std::endl;
+    }
+
+    void testDBMultipleUpdatesDeeper() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+        // std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        db.Put((4 * THRESHOLD) + 23, 33);
+        db.Put((5 * THRESHOLD) + 999, 44);
+        db.Put((6 * THRESHOLD) + 67, 55);
+        db.Put((7 * THRESHOLD) + 6768, 66);
+
+        for (uint64_t i = 9 * THRESHOLD; i < (18 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        auto res1 = db.Get((4 * THRESHOLD) + 23);
+        auto res2 = db.Get((5 * THRESHOLD) + 999);
+        auto res3 = db.Get((6 * THRESHOLD) + 67);
+        auto res4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1.value() == 33);
+        assert(res2.value() == 44);
+        assert(res3.value() == 55);
+        assert(res4.value() == 66);
+        std::cout << "DB::testDBMultipleUpdatesDeeper() test passed!" << std::endl;
+    }
+
+    void testDBPersistentUpdates() {
+        const std::string testDB = "testdb";
+
+        std::filesystem::remove_all(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (8 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+        auto resv1 = db.Get((4 * THRESHOLD) + 23);
+        auto resv2 = db.Get((5 * THRESHOLD) + 999);
+        auto resv3 = db.Get((6 * THRESHOLD) + 67);
+        auto resv4 = db.Get((7 * THRESHOLD) + 6768);
+
+        assert((resv1.value() = (4 * THRESHOLD) + 23));
+        assert((resv2.value() = (5 * THRESHOLD) + 999));
+        assert((resv3.value() = (6 * THRESHOLD) + 67));
+        assert((resv4.value() = (7 * THRESHOLD) + 6768));
+
+        db.Put((4 * THRESHOLD) + 23, 44);
+        db.Put((5 * THRESHOLD) + 999, 55);
+        db.Put((6 * THRESHOLD) + 67, 42);
+        db.Put((7 * THRESHOLD) + 6768, 67);
+
+        db.Close();
+        DB db2;
+        db2.Open(testDB);
+        db2.Put((7 * THRESHOLD) + 6768, 68);
+
+        auto res1 = db2.Get((4 * THRESHOLD) + 23);
+        auto res2 = db2.Get((5 * THRESHOLD) + 999);
+        auto res3 = db2.Get((6 * THRESHOLD) + 67);
+        auto res4 = db2.Get((7 * THRESHOLD) + 6768);
+
+        assert(res1.value() == 44);
+        assert(res2.value() == 55);
+        assert(res3.value() == 42);
+        assert(res4.value() == 68);
+
+        std::cout << "DB::testDBPersistentUpdates() test passed!" << std::endl;
+    }
+
+    void testDBDeleteScans() {
+        const std::string testDB = "testdb";
+        std::filesystem::remove_all(testDB);
+        // std::filesystem::create_directory(testDB);
+
+        DB db;
+        db.Open(testDB);
+
+        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+            db.Put(i, i);
+        }
+
+        for (uint64_t i = 0; i < (3 * THRESHOLD) + 5; i++) {
+            if (i % 2 == 1) {
+                db.Delete(i);
+            }
+        }
+
+        uint64_t key1 = 0;
+        uint64_t key2 = 2 * THRESHOLD;
+
+        kvPairs res1 = db.Scan(key1, key2);
+
+        assert(res1.size() == THRESHOLD + 1);
+
+        bool oddFound = false;
+
+        for (size_t i = 0; i < res1.size(); i++) {
+            const auto& t = res1[i];
+            uint64_t k = std::get<0>(t);
+            uint64_t v = std::get<1>(t);
+
+            if (std::get<0>(t) % 2 != 0) {
+                oddFound = true;  // since we didn't insert any odd key value pairs
+            }
+
+            // the notion is that the key and values are the same as per how we inserted it
+            // into our database, so we know that it is correct if the key is equal to the value
+            // for all returned things in our scan query
+            assert(k == v);
+        }
+        assert(!oddFound);  // i.e. ensuring that no odd key value pairs were found
+        std::cout << "DB::testDBDeleteScans() test passed!" << std::endl;
+    }
 };
 
 int main() {
@@ -850,5 +1039,11 @@ int main() {
     tester.testDBMultipleDeletes();
     tester.testDBMultipleDeletesDeeper();
     tester.testDBPersistentDeletes();
+    tester.testDBUpdatesMemtable();
+    tester.testDBUpdatesTwice();
+    tester.testDBMultipleUpdates();
+    tester.testDBMultipleDeletesDeeper();
+    tester.testDBPersistentUpdates();
+    tester.testDBDeleteScans();
     return 0;
 }

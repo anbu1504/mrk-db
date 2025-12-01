@@ -22,7 +22,6 @@ class SSTView {
     uint64_t pageNum;
     uint64_t currKeyIdx;
 
-
    public:
     SSTView(BufferPool* bufPool, uint64_t sstNum);
 

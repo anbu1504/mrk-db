@@ -1,6 +1,7 @@
 .vscode/*
 .idea/*
 build/*
+experiment_results/*
 tests
 experiments
 testdb
@@ -9,4 +10,3 @@ exp_db_btree_*
 exp_put_*
 exp_get_*
 exp_scan_*
-*.csv

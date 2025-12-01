@@ -1,14 +1,14 @@
 #pragma once
 
+#include <stdio.h>
+
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <tuple>
 #include <vector>
-
-#include <stdio.h>
-#include <iostream>
 
 #define LN_2 0.69
 #define PAGE_SIZE 4096

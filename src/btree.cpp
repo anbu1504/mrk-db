@@ -23,7 +23,7 @@ BTree::BTree(BufferPool* bufPool, uint64_t sstNum, uint64_t numKeys, uint64_t pa
 uint64_t BTree::findLeafPage(uint64_t key) {
     PageBuffer pageBuf;
 
-    uint64_t currPage = pageOffset;         // page corresponding to root node    
+    uint64_t currPage = pageOffset;         // page corresponding to root node
     while (currPage >= 1 + numLeafNodes) {  // while not a leaf node
         bufPool->bread(sstNum, currPage, pageBuf);
         currPage = getNextBTreeNode(key, pageBuf);
@@ -33,7 +33,6 @@ uint64_t BTree::findLeafPage(uint64_t key) {
 }
 
 uint64_t BTree::getNextBTreeNode(uint64_t currKey, PageBuffer pageBuf) {
-    
     uint64_t numKeysInNode = pageBuf[0];
     uint64_t startOfChildren = 1 + numKeysInNode;
 
@@ -194,13 +193,11 @@ void printBTNode(const BTNode& node) {
     std::cout << "printBTNode numKeys = " << numKeys << "\n";
 
     std::cout << "printBTNode keys: ";
-    for (uint64_t k : keys)
-        std::cout << k << " ";
+    for (uint64_t k : keys) std::cout << k << " ";
     std::cout << "\n";
 
     std::cout << "printBTNode children: ";
-    for (uint64_t c : children)
-        std::cout << c << " ";
+    for (uint64_t c : children) std::cout << c << " ";
     std::cout << "\n";
 }
 
