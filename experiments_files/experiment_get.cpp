@@ -7,7 +7,10 @@
 
 using namespace std::chrono;
 
-static const uint64_t NUM_OPS = 10000;
+static const uint64_t NUM_OPS = 1000;
+#define ONE_MB 1048576 //1MB in bytes
+#define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
+#define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
 
 uint64_t throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
@@ -28,16 +31,18 @@ void getThroughput() {
     std::vector<uint64_t> sizes = {
         1000,    5000,     10000,    50000,     100000,    500000,   1000000,
         5000000, 10000000, 50000000, 100000000, 500000000, 625000000};  // 1GB = 625000000 KV-pairs
+    
+    std::string dbName = "exp_get";
+    std::filesystem::remove_all(dbName);
 
-    for (uint64_t size : sizes) {
-        std::string dbName = "exp_get_" + std::to_string(size);
-        std::filesystem::remove_all(dbName);
+    DB db;
+    db.Open(dbName, useBTreeSearch=true);
 
-        DB db;
-        db.Open(dbName, useBTreeSearch=true);
+    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 2 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
+        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
         // Preload DB
-        for (uint64_t i = 0; i < size; i++) {
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
             db.Put(i, i);
         }
 
@@ -52,8 +57,10 @@ void getThroughput() {
 
         db.Close();
         std::filesystem::remove_all(dbName);
-        std::cout << "Size: " << size << " completed!" << std::endl;
+        std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
+    db.Close();
+    std::filesystem::remove_all(dbName);
     csv.close();
 
     std::ifstream in("experiment_results/get_throughput.csv");

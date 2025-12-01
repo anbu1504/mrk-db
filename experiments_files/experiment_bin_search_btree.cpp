@@ -7,7 +7,10 @@
 
 using namespace std::chrono;
 
-static const uint64_t NUM_OPS = 10000;
+static const uint64_t NUM_OPS = 1000;
+#define ONE_MB 1048576 //1MB in bytes
+#define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
+#define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
 
 uint64_t throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
@@ -30,14 +33,21 @@ void binSearchVsBTreeSearch() {
 
     csv << "data_size,bin_search_throughput_ops_per_sec,btree_search_throughput_ops_per_sec\n";
 
-    for (uint64_t size : sizes) {
-        std::string dbNameBin = "exp_db_bin_" + std::to_string(size);
-        std::filesystem::remove_all(dbNameBin);
+    std::string dbNameBin = "exp_db_bin";
+    std::filesystem::remove_all(dbNameBin);
+    DB dbBin;
+    dbBin.Open(dbNameBin, useBTreeSearch=false);  // binary search
 
-        DB dbBin;
-        dbBin.Open(dbNameBin, useBTreeSearch=false);  // binary search
+    std::string dbNameBTree = "exp_db_btree";
+    std::filesystem::remove_all(dbNameBTree);
 
-        for (uint64_t i = 0; i < size; i++) {
+    DB dbBTree;
+    dbBTree.Open(dbNameBTree, useBTreeSearch=true);  // B-tree search
+
+    for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 2 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
+        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
+
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
             dbBin.Put(i, i);
         }
 
@@ -48,16 +58,7 @@ void binSearchVsBTreeSearch() {
             }
         });
 
-        dbBin.Close();
-        std::filesystem::remove_all(dbNameBin);
-
-        std::string dbNameBTree = "exp_db_btree_" + std::to_string(size);
-        std::filesystem::remove_all(dbNameBTree);
-
-        DB dbBTree;
-        dbBTree.Open(dbNameBTree, useBTreeSearch=true);  // B-tree search
-
-        for (uint64_t i = 0; i < size; i++) {
+        for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < ONETWENTYEIGHT_MB_KV; i++) {
             dbBTree.Put(i, i);
         }
 
@@ -68,12 +69,14 @@ void binSearchVsBTreeSearch() {
             }
         });
 
-        dbBTree.Close();
-        std::filesystem::remove_all(dbNameBTree);
-
         csv << size << "," << throughputBinary << "," << throughputBTree << "\n";
-        std::cout << "Size: " << size << " completed!" << std::endl;
+        std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
+
+    dbBin.Close();
+    std::filesystem::remove_all(dbNameBin);
+    dbBTree.Close();
+    std::filesystem::remove_all(dbNameBTree);
 
     csv.close();
     std::ifstream in("experiment_results/bin_vs_btree.csv");
