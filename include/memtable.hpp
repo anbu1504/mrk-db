@@ -70,4 +70,6 @@ class Memtable {
     Node* getRoot();  // get root of memtable
     bool isEmpty();   // helper function for checking if empty
     std::vector<uint64_t> inorderTraversalDel();
+    void print();
+    void printRec(Node* node);
 };

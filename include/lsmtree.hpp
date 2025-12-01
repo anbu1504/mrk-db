@@ -27,6 +27,6 @@ class LSMTree {
     void Put(uint64_t key, uint64_t value);
     uint64_t Get(uint64_t key);
     kvPairs Scan(uint64_t key1, uint64_t key2);
-    void Close();
+    std::vector<uint64_t> Close();
     std::vector<uint64_t> getOccupancyLevels();
 };

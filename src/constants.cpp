@@ -1,24 +1,28 @@
 #include "../include/constants.hpp"
 
-// This function must ONLY be called if the desired values is in [lo, hi]
-uint64_t binSearch(uint64_t lo, uint64_t hi, const std::function<int(uint64_t)>& comparator) {
-    uint64_t mid;
+uint64_t binSearch(uint64_t lo, uint64_t hi,
+                   const std::function<int(uint64_t)>& cmp) {
+    uint64_t result = lo;  // fallback (useful for floor semantics)
 
     while (lo <= hi) {
-        mid = lo + (hi - lo) / 2;
+        uint64_t mid = lo + (hi - lo) / 2;
+        int c = cmp(mid);
 
-        int direction = comparator(mid);
-
-        if (direction < 0) {
+        if (c < 0) {
+            // key < mid -> move left
+            if (mid == 0) break;   // avoid underflow
             hi = mid - 1;
-        } else if (direction > 0) {
+        } else if (c > 0) {
+            // key > mid -> move right
+            result = mid;          // best known floor position
             lo = mid + 1;
         } else {
-            break;
+            // Found exact match
+            return mid;
         }
     }
 
-    return mid;
+    return result;  // floor of the search space
 }
 
 // number of pages = ceil(total entries / entries in a page)

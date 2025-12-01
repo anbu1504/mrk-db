@@ -76,7 +76,7 @@ int DB::Delete(uint64_t key) {
 }
 
 int DB::Close() {
-    std::vector<uint64_t> lsmOccupancyLevels = lsmTree->getOccupancyLevels();
+    std::vector<uint64_t> lsmOccupancyLevels = lsmTree->Close();
     uint64_t lsmTreeLevels = lsmOccupancyLevels.size();
 
     // NOTE the structure of meta.sst
@@ -106,7 +106,6 @@ int DB::Close() {
     }
     bufPool->bwrite(METADATA_NUM, 0, pageBuf);  // writing into meta.sst
 
-    lsmTree->Close();
     bufPool->evictAllPages();
 
     delete lsmTree;

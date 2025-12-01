@@ -237,3 +237,16 @@ uint64_t Memtable::getMin(Node* node) {
         return getMin(node->left);
     }
 }
+
+void Memtable::print() {
+    std::cout << "{ ";
+    printRec(root);
+    std::cout << "}" << std::endl;
+}
+
+void Memtable::printRec(Node* node) {
+    if (!node) return;
+    printRec(node->left);
+    std::cout << node->key << ":" << node->value << " ";
+    printRec(node->right);
+}

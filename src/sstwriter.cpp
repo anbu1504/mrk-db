@@ -108,8 +108,8 @@ uint64_t SSTWriter::multiwayMergeSort(uint64_t sstNum1, uint64_t sstNum2) {
     uint64_t currPageNumOne = 1;
     uint64_t currPageNumTwo = 1;
     uint64_t itemsInPageOne =
-        calcNumItemsInPage(numKeysOne, 0);  // used to check if we are at the end of the current buffer
-    uint64_t itemsInPageTwo = calcNumItemsInPage(numKeysTwo, 0);
+        calcNumItemsInPage(numKeysOne, 1);  // used to check if we are at the end of the current buffer
+    uint64_t itemsInPageTwo = calcNumItemsInPage(numKeysTwo, 1);
     uint64_t currKeyIndOne = 0;
     uint64_t currKeyIndTwo = 0;
     uint64_t totalKeys = 0;

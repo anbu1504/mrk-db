@@ -147,11 +147,12 @@ kvPairs LSMTree::Scan(uint64_t key1, uint64_t key2) {
     return output;
 }
 
-void LSMTree::Close() {
+std::vector<uint64_t> LSMTree::Close() {
     if (memtable->isEmpty()) {
-        return;
+        return levels;
     }
     flushHelper();
+    return levels;
 }
 
 std::vector<uint64_t> LSMTree::getOccupancyLevels() { return levels; }
