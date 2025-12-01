@@ -29,7 +29,7 @@ void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bo
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
     } else {
         int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY | O_DIRECT);
-        int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY); // For Mac
+        // int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY); // For Mac
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
         cachePut(createPageID(sstNum, pageNum), pageBuf, false);
