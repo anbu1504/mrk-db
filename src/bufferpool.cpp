@@ -28,8 +28,8 @@ void BufferPool::bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf, bo
     if (!bypassCache && cachedHPage) {
         memcpy(pageBuf, cachedHPage->cachedPage, PAGE_SIZE);
     } else {
-        // int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY | O_DIRECT);
-        int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY); // For Mac
+        int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY | O_DIRECT);
+        // int fd = open(createSSTPath(sstNum).c_str(), O_RDONLY); // For Mac
         pread(fd, pageBuf, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
         cachePut(createPageID(sstNum, pageNum), pageBuf, false);
@@ -158,8 +158,8 @@ bool BufferPool::evict(uint64_t victimIdx) {
         uint64_t sstNum = std::stoull(victim.pageID.substr(0, underscoreIdx));
         uint64_t pageNum = std::stoull(victim.pageID.substr(underscoreIdx + 1));
 
-        // int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT | O_DIRECT, 0644);
-        int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644); // For Mac
+        int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT | O_DIRECT, 0644);
+        // int fd = open(createSSTPath(sstNum).c_str(), O_RDWR | O_CREAT, 0644); // For Mac
         pwrite(fd, victim.cachedPage, PAGE_SIZE, pageNum * PAGE_SIZE);
         close(fd);
     }
@@ -181,21 +181,3 @@ void BufferPool::runClockIfFull() {
     }
     return;
 }
-
-// void BufferPool::printHashTable() {
-//     std::cout << "=== BufferPool Hash Table ===\n";
-//     std::cout << "idx\tpageID\t\tdirty ref probe cached?\n";
-//     for (uint64_t i = 0; i < cacheSize; i++) {
-//         const HPage& h = hashTable[i];
-//         if (!h.cachedPage) continue;
-//         std::cout << i << "\t"
-//                   << h.pageID << "\t"
-//                   << (h.dirtyBit ? "D" : "-") << "     "
-//                   << (h.refBit ? "R" : "-") << "   "
-//                   << std::setw(2) << h.probeSeqLen << "   "
-//                   << "0x" << std::hex << (uintptr_t)h.cachedPage << std::dec
-//                   << "\n";
-//     }
-//     std::cout << "numCachedPages=" << numCachedPages
-//               << " clockHandle=" << clockHandle << "\n";
-// }
