@@ -19,12 +19,12 @@ static const uint64_t NUM_OPS = 100;
 #define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
 #define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
 
-uint64_t throughput(std::function<void()> fn) {
+double throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
     fn();
     auto end = high_resolution_clock::now();
     double sec = duration<double>(end - start).count();
-    return (uint64_t)(NUM_OPS / sec);
+    return (NUM_OPS / sec);
 }
 
 void binSearchVsBTreeSearch() {
@@ -55,7 +55,7 @@ void binSearchVsBTreeSearch() {
         for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             dbBin.Put(i, i);
         }
-        uint64_t throughputBinary = throughput([&]() {
+        double throughputBinary = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
                 if (rng() % 2 == 0) {
                     uint64_t key1 = rng() % size;
@@ -74,7 +74,7 @@ void binSearchVsBTreeSearch() {
             dbBTree.Put(i, i);
         }
 
-        uint64_t throughputBTree = throughput([&]() {
+        double throughputBTree = throughput([&]() {
            for (uint64_t i = 0; i < NUM_OPS; i++) {
                 if (rng() % 2 == 0) {
                     uint64_t key1 = rng() % size;

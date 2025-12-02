@@ -49,7 +49,9 @@ void BufferPool::bdelete(uint64_t sstNum) {
 
     uint64_t hPageNum = 0;
 
-    for (uint64_t visitedPages = 0; visitedPages < cacheSize; visitedPages++) {
+    // Walk every slot once; if backshift moves an entry into the current slot,
+    // re-check the same index before advancing.
+    while (hPageNum < cacheSize) {
         if (!hashTable[hPageNum].cachedPage) {
             hPageNum++;
             continue;

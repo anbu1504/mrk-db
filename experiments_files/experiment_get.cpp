@@ -19,12 +19,12 @@ static const uint64_t NUM_OPS = 100;
 #define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
 #define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
 
-uint64_t throughput(std::function<void()> fn) {
+double throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
     fn();
     auto end = high_resolution_clock::now();
     double sec = duration<double>(end - start).count();
-    return (uint64_t)(NUM_OPS / sec);
+    return (NUM_OPS / sec);
 }
 
 void getThroughput() {
@@ -50,7 +50,7 @@ void getThroughput() {
             db.Put(i, i);
         }
 
-        uint64_t throughputGet = throughput([&]() {
+        double throughputGet = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
                 uint64_t key = rng() % size;
                 db.Get(key);
