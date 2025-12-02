@@ -1,6 +1,7 @@
 #include "../include/bloomfilter.hpp"
 
 #include "../external/xxhash64.h"
+#include <cstring>
 
 /**
  * @brief Constructor for the BloomFilter class
