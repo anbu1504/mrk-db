@@ -29,10 +29,14 @@ double throughput(std::function<void()> fn) {
 }
 
 void putThroughput() {
+    std::filesystem::create_directory("experiment_results");
+
     std::cout << "Put Throughput Experiment Has Started!" << std::endl;
     std::ofstream csv("experiment_results/put_throughput.csv");
 
     csv << "data_size,throughput_ops_per_sec\n" << std::endl;
+
+    std::mt19937_64 rng(42);
     std::string dbName = "exp_put";
     std::filesystem::remove_all(dbName);
 
@@ -44,7 +48,8 @@ void putThroughput() {
 
         double throughputPut = throughput([&]() {
             for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
-                db.Put(i, i);
+                uint64_t key = rng() % size;
+                db.Put(key, key);
             }
         });
 

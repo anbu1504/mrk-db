@@ -28,6 +28,8 @@ double throughput(std::function<void()> fn) {
 }
 
 void scanThroughput() {
+    std::filesystem::create_directory("experiment_results");
+
     std::cout << "Scan Throughput Experiment Has Started!" << std::endl;
     std::ofstream csv("experiment_results/scan_throughput.csv");
 
@@ -48,9 +50,8 @@ void scanThroughput() {
 
         double throughputScan = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
-                uint64_t a = rng() % (size - 500);
-                uint64_t b = a + 500;
-                db.Scan(a, b);
+                uint64_t key = rng() % size;
+                db.Scan(key, key + 500);
             }
         });
 

@@ -14,7 +14,7 @@
 
 using namespace std::chrono;
 
-static const uint64_t NUM_OPS = 100;
+static const uint64_t NUM_OPS = 500;
 #define ONE_MB 1048576 //1MB in bytes
 #define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
 #define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
@@ -28,10 +28,10 @@ double throughput(std::function<void()> fn) {
 }
 
 void binSearchVsBTreeSearch() {
+    std::filesystem::create_directory("experiment_results");
+
     std::cout << "Binary Search vs. B-Tree Search Experiment Has Started!" << std::endl;
     std::mt19937_64 rng(42);  // fixed seed for reproducibility
-    // 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000, 50_000_000, 100_000_000,
-    // 500_000_000, 625_000_000
 
     std::ofstream csv("experiment_results/bin_vs_btree.csv");
 
@@ -57,13 +57,10 @@ void binSearchVsBTreeSearch() {
         }
         double throughputBinary = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
-                if (rng() % 2 == 0) {
-                    uint64_t key1 = rng() % size;
-                    uint64_t key2 = rng() % size;
-                    if (key1 > key2) std::swap(key1, key2);
-                    dbBin.Scan(key1, key2 + 1);
+                uint64_t key = rng() % size;
+                if (i % 2 == 0) {
+                    dbBin.Scan(key, key + 500);
                 } else {
-                    uint64_t key = rng() % size;
                     dbBin.Get(key);
                 }
             }
@@ -75,14 +72,11 @@ void binSearchVsBTreeSearch() {
         }
 
         double throughputBTree = throughput([&]() {
-           for (uint64_t i = 0; i < NUM_OPS; i++) {
-                if (rng() % 2 == 0) {
-                    uint64_t key1 = rng() % size;
-                    uint64_t key2 = rng() % size;
-                    if (key1 > key2) std::swap(key1, key2);
-                    dbBTree.Scan(key1, key2 + 1);
+            for (uint64_t i = 0; i < NUM_OPS; i++) {
+                uint64_t key = rng() % size;
+                if (i % 2 == 0) {
+                    dbBTree.Scan(key, key + 500);
                 } else {
-                    uint64_t key = rng() % size;
                     dbBTree.Get(key);
                 }
             }
