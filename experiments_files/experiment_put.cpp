@@ -1,24 +1,20 @@
-#include <iostream>
-#include <vector>
-#include <random>
 #include <chrono>
-#include <functional>
-#include <fstream>
 #include <cstdint>
 #include <filesystem>
-
-#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
 #include <random>
+#include <vector>
 
 #include "../include/mrkdb.hpp"
 
 using namespace std::chrono;
 
 static const uint64_t NUM_OPS = 500;
-#define ONE_MB 1048576 //1MB in bytes
-#define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
-#define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
-
+#define ONE_MB 1048576                // 1MB in bytes
+#define ONETWENTYEIGHT_MB_KV 8388608  // 128MB / 16 bytes per KV-pair
+#define ONE_GB_KV 625000000           // 1GB / 16 bytes per KV-pair
 
 double throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
@@ -44,7 +40,7 @@ void putThroughput() {
     db.Open(dbName);  // search method irrelevant for put
 
     for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
-        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
+        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB" << std::endl;
 
         double throughputPut = throughput([&]() {
             for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
@@ -62,7 +58,7 @@ void putThroughput() {
     csv.close();
     std::ifstream in("experiment_results/put_throughput.csv");
     std::cout << "\n=== CSV OUTPUT FOR PUT THROUGHPUT ===\n\n" << std::endl;
-    std::cout << in.rdbuf() << std::endl; // dumps entire file directly to stdout
+    std::cout << in.rdbuf() << std::endl;  // dumps entire file directly to stdout
     std::cout << "\n\n" << std::endl;
     std::cout << "=== END CSV OUTPUT FOR PUT THROUGHPUT ===\n\n";
     std::cout << "Put Throughput Experiment Has Ended!\n" << std::endl;

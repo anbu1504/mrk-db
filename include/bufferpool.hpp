@@ -115,7 +115,7 @@ class BufferPool {
     /**
      * @brief Destructor that frees cached pages and flushes dirty data.
      */
-    ~BufferPool();                      // destructor to free memory
+    ~BufferPool();  // destructor to free memory
 
     /**
      * @brief Reads a page from disk or cache.
@@ -126,7 +126,7 @@ class BufferPool {
      * @param bypassCache If true, read directly from disk
      */
     void bread(uint64_t sstNum, uint64_t pageNum, PageBuffer pageBuf,
-               bool bypassCache = false);                                // return number of bytes read
+               bool bypassCache = false);  // return number of bytes read
 
     /**
      * @brief Writes a page to cache and updates the cache entry.
@@ -147,5 +147,5 @@ class BufferPool {
     /**
      * @brief Evicts all pages, flushing dirty pages to disk.
      */
-    void evictAllPages();           // evicts all pages and writes dirty pages to storage
+    void evictAllPages();  // evicts all pages and writes dirty pages to storage
 };

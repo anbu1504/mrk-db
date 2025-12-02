@@ -6,7 +6,7 @@
 
 /**
  * @class BloomFilter
- * @brief Data structure used to test membership of keys in SSTs.
+ * @brief Probabilistic data structure used to test membership of keys in SSTs.
  */
 class BloomFilter {
    private:
@@ -47,13 +47,17 @@ class BloomFilter {
      * @brief Checks if a key may exist in the Bloom filter.
      *
      * @param key The key to check in the filter
+     * @return True if the key may be present (false positives possible); false if definitely absent
      */
     bool checkKey(uint64_t key);
 
     /**
      * @brief Resets all Bloom filter pages to zero.
      */
-    void wipePages(); 
+    void wipePages();
 
+    /**
+     * @brief Flushes in-memory Bloom filter pages to disk.
+     */
     void flushPages();
 };

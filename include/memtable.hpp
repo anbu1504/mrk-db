@@ -102,8 +102,7 @@ class Memtable {
      * @param min Minimum key (inclusive)
      * @param max Maximum key (inclusive)
      */
-    void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>>* entries, Node* node, uint64_t min,
-                     uint64_t max);
+    void scanTreeRec(std::vector<std::tuple<uint64_t, uint64_t>>* entries, Node* node, uint64_t min, uint64_t max);
 
     /**
      * @brief Recursively retrieves the value for a key.
@@ -111,8 +110,7 @@ class Memtable {
      * @param node Current subtree root
      * @param k Key to search for
      */
-    std::optional<uint64_t> getValueRec(
-        Node* node, uint64_t k);
+    std::optional<uint64_t> getValueRec(Node* node, uint64_t k);
 
     /**
      * @brief Recursively performs inorder traversal and collects keys and deletes nodes in the tree.

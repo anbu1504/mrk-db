@@ -26,22 +26,6 @@ class DBTester {
     };
 
     void testDBGetMemtable() {
-        // int age;
-        // std::string name;
-
-        // // Execute the 'ls' command
-        // int result = system("ls");
-
-        // // Check the return value (0 usually indicates success)
-        // if (result == 0) {
-        //     std::cout << "ls command executed successfully." << std::endl;
-        // } else {
-        //     std::cerr << "Error executing ls command. Return code: " << result << std::endl;
-        // }
-
-        // // Prompt for and read an integer
-        // std::cout << "Enter your age: ";
-        // std::cin >> age;
         const std::string testDB = "testdb";
 
         std::filesystem::remove_all(testDB);

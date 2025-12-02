@@ -25,7 +25,7 @@
 #define METADATA_NUM (UINT64_MAX - 1)
 #define LAYER_DATA_NUM (UINT64_MAX - 2)
 #define SST_TEMP_NUM(s) (UINT64_MAX - 3 - (s))
-#define TEMP_THRESHOLD (INT64_MAX) // I.e., UINT64_MAX / 2
+#define TEMP_THRESHOLD (INT64_MAX)  // I.e., UINT64_MAX / 2
 
 typedef std::tuple<size_t, size_t, uint64_t, uint64_t, uint64_t> sstMetadata;
 typedef std::vector<std::tuple<uint64_t, uint64_t>> kvPairs;

@@ -1,24 +1,21 @@
-#include <iostream>
-#include <vector>
-#include <random>
 #include <chrono>
-#include <functional>
-#include <fstream>
 #include <cstdint>
 #include <filesystem>
-
-#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
 #include <random>
+#include <vector>
 
-#include "../include/mrkdb.hpp"
 #include "../include/globals.hpp"
+#include "../include/mrkdb.hpp"
 
 using namespace std::chrono;
 
 static const uint64_t NUM_OPS = 500;
-#define ONE_MB 1048576 //1MB in bytes
-#define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
-#define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
+#define ONE_MB 1048576                // 1MB in bytes
+#define ONETWENTYEIGHT_MB_KV 8388608  // 128MB / 16 bytes per KV-pair
+#define ONE_GB_KV 625000000           // 1GB / 16 bytes per KV-pair
 
 double throughput(std::function<void()> fn) {
     auto start = high_resolution_clock::now();
@@ -41,17 +38,16 @@ void binSearchVsBTreeSearch() {
     std::string dbNameBin = "exp_db_bin";
     std::filesystem::remove_all(dbNameBin);
     DB dbBin;
-    dbBin.Open(dbNameBin, useBTreeSearch=false);  // binary search
+    dbBin.Open(dbNameBin, useBTreeSearch = false);  // binary search
 
     std::string dbNameBTree = "exp_db_btree";
     std::filesystem::remove_all(dbNameBTree);
 
     DB dbBTree;
-    dbBTree.Open(dbNameBTree, useBTreeSearch=true);  // B-tree search
+    dbBTree.Open(dbNameBTree, useBTreeSearch = true);  // B-tree search
 
     for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
-        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
-
+        std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB" << std::endl;
 
         rng.seed(size);
         for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
@@ -97,7 +93,7 @@ void binSearchVsBTreeSearch() {
     csv.close();
     std::ifstream in("experiment_results/bin_vs_btree.csv");
     std::cout << "\n=== CSV OUTPUT FOR BINARY SEARCH VS. BTREE ===\n\n" << std::endl;
-    std::cout << in.rdbuf() << std::endl; // dumps entire file directly to stdout
+    std::cout << in.rdbuf() << std::endl;  // dumps entire file directly to stdout
     std::cout << "\n\n" << std::endl;
     std::cout << "=== END CSV OUTPUT FOR BINARY SEARCH VS. BTREE ===\n\n";
     std::cout << "Binary Search vs. B-Tree Search Experiment Has Ended!\n" << std::endl;

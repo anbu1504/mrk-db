@@ -26,6 +26,10 @@ class DB {
      * @brief Opens the database and prepares it to run.
      *
      * @param dbName Name of the database to open/create (if it doesn't already exist)
+     * @param useBTreeSearchValue Whether to use B-Tree lookup inside SSTs
+     * @param bitsPerEntryValue Bits per entry for Bloom filters
+     * @param cacheSizeValue Number of pages to cache in the buffer pool
+     * @param memtableThresholdValue Number of bytes after which the memtable flushes
      */
 
     int Open(const std::string dbName, bool useBTreeSearchValue = true, uint64_t bitsPerEntryValue = 8,
@@ -50,22 +54,20 @@ class DB {
      * @brief Retrieves all KV-pairs in a key range in key order (key1 < key2).
      *
      * @param key1 The first key in the key range for which values will be retrieved
-     * @param key1 The last key in the key range for which values will be retrieved
+     * @param key2 The last key in the key range for which values will be retrieved
      */
     kvPairs Scan(uint64_t key1, uint64_t key2);
 
     /**
      * @brief Deletes a key-value pair based on the key
      *
-     * @param key The key in question who's key value pair should be deleted
+     * @param key The key whose key-value pair should be deleted
      */
 
     int Delete(uint64_t key);
 
     /**
      * @brief Closes the database.
-     *
-     * @param dbName Name of the database to open
      */
     int Close();
 };

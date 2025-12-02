@@ -4,7 +4,6 @@ SSTView::SSTView(BufferPool* bufPool, uint64_t sstNum)
     : bufPool(bufPool), sstNum(sstNum), pageBuf(), pageNum(TOMBSTONE) {  // Is this initialization correct?
 
     PageBuffer metadataPageBuf;
-    // bufPool->printHashMap();
     bufPool->bread(sstNum, 0, metadataPageBuf);
 
     numKeys = metadataPageBuf[0];
