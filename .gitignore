@@ -1,7 +1,6 @@
 .vscode/*
 .idea/*
 build/*
-experiment_results/*
 tests
 experiments
 experiments_bin_search_btree
