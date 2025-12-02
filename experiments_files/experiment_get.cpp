@@ -14,7 +14,7 @@
 
 using namespace std::chrono;
 
-static const uint64_t NUM_OPS = 100;
+static const uint64_t NUM_OPS = 500;
 #define ONE_MB 1048576 //1MB in bytes
 #define ONETWENTYEIGHT_MB_KV 8388608 // 128MB / 16 bytes per KV-pair
 #define ONE_GB_KV 625000000 // 1GB / 16 bytes per KV-pair
@@ -28,6 +28,7 @@ double throughput(std::function<void()> fn) {
 }
 
 void getThroughput() {
+    std::filesystem::create_directory("experiment_results");
     std::cout << "Get Throughput Experiment Has Started!" << std::endl;
 
     std::ofstream csv("experiment_results/get_throughput.csv");
@@ -59,8 +60,6 @@ void getThroughput() {
 
         csv << size << "," << throughputGet << std::endl;
 
-        db.Close();
-        std::filesystem::remove_all(dbName);
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
     db.Close();
