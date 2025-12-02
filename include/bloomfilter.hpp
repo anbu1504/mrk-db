@@ -16,6 +16,7 @@ class BloomFilter {
     uint64_t pageOffset;
     uint64_t numHashFunctions;
     uint64_t totalBits;
+    std::vector<uint64_t*> pages;
 
    public:
     /**
@@ -52,5 +53,7 @@ class BloomFilter {
     /**
      * @brief Resets all Bloom filter pages to zero.
      */
-    void wipePages();
+    void wipePages(); 
+
+    void flushPages();
 };

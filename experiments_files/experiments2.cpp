@@ -13,7 +13,7 @@
 
 #include "../include/mrkdb.hpp"
 
-#define ONETWENTYEIGHT_MB_KV 2048
+#define ONETWENTYEIGHT_MB_KV 8388608
 
 using namespace std::chrono;
 

@@ -37,6 +37,7 @@ void SSTWriter::writeMiniSST(std::vector<uint64_t>* memtableData) {
         BloomFilter bloomFilter(bufPool, sstNum, numKeys, 1 + numLeafPages);
         bloomFilter.wipePages();
         bloomFilter.addMultiKeys(memtableData);
+        bloomFilter.flushPages();
 
         BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
         bTree.createBTree(memtableData);
@@ -90,6 +91,7 @@ void SSTWriter::mergeSSTs(uint64_t sstNum1, uint64_t sstNum2) {
     bufPool->bwrite(sstNum, 0, pageBuf);
 
     if (sstNum < TEMP_THRESHOLD) {
+        bloomFilter.flushPages();
         BTree bTree(bufPool, sstNum, numKeys, 1 + numLeafPages + numFilterPages);
         std::vector<uint64_t> emptyVec;
         bTree.createBTree(&emptyVec);
