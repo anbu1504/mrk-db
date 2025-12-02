@@ -11,6 +11,7 @@
 #include <random>
 
 #include "../include/mrkdb.hpp"
+#include "../include/globals.hpp"
 
 using namespace std::chrono;
 
@@ -35,7 +36,7 @@ void binSearchVsBTreeSearch() {
 
     std::ofstream csv("experiment_results/bin_vs_btree.csv");
 
-    csv << "data_size,bin_search_throughput_ops_per_sec,btree_search_throughput_ops_per_sec\n";
+    csv << "data_size_mb,bin_search_throughput_ops_per_sec,btree_search_throughput_ops_per_sec" << std::endl;
 
     std::string dbNameBin = "exp_db_bin";
     std::filesystem::remove_all(dbNameBin);
@@ -51,10 +52,12 @@ void binSearchVsBTreeSearch() {
     for (uint64_t size = ONETWENTYEIGHT_MB_KV; size <= 8 * ONETWENTYEIGHT_MB_KV; size = size + ONETWENTYEIGHT_MB_KV) {
         std::cout << "Starting Size: " << size * 16 / ONE_MB << " MB"  << std::endl;
 
+
         rng.seed(size);
         for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             dbBin.Put(i, i);
         }
+        useBTreeSearch = false;
         double throughputBinary = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
                 uint64_t key = rng() % size;
@@ -70,7 +73,7 @@ void binSearchVsBTreeSearch() {
         for (uint64_t i = size - ONETWENTYEIGHT_MB_KV; i < size; i++) {
             dbBTree.Put(i, i);
         }
-
+        useBTreeSearch = true;
         double throughputBTree = throughput([&]() {
             for (uint64_t i = 0; i < NUM_OPS; i++) {
                 uint64_t key = rng() % size;
@@ -82,7 +85,7 @@ void binSearchVsBTreeSearch() {
             }
         });
 
-        csv << size << "," << throughputBinary << "," << throughputBTree << std::endl;
+        csv << size * 16 / ONE_MB << "," << throughputBinary << "," << throughputBTree << std::endl;
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
     }
 

@@ -33,7 +33,7 @@ void scanThroughput() {
     std::cout << "Scan Throughput Experiment Has Started!" << std::endl;
     std::ofstream csv("experiment_results/scan_throughput.csv");
 
-    csv << "data_size,throughput_ops_per_sec\n" << std::endl;
+    csv << "data_size_mb,throughput_ops_per_sec" << std::endl;
 
     std::mt19937_64 rng(42);
 
@@ -55,7 +55,7 @@ void scanThroughput() {
             }
         });
 
-        csv << size << "," << throughputScan << std::endl;
+        csv << size * 16 / ONE_MB << "," << throughputScan << std::endl;
 
         std::cout << "Size: " << size * 16 / ONE_MB << " MB completed!" << std::endl;
 

@@ -9,8 +9,6 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
     if (std::filesystem::create_directory(dbName)) {
         useBTreeSearch = useBTreeSearchValue;
         bitsPerEntry = bitsPerEntryValue;
-        // initialDirSize = initialDirSizeValue;
-        // maxDirSize = maxDirSizeValue;
         cacheSize = cacheSizeValue;
         memtableThreshold = memtableThresholdValue;
 
@@ -30,7 +28,7 @@ int DB::Open(const std::string dbName, bool useBTreeSearchValue, uint64_t bitsPe
 
         uint64_t levelsSize = pageBuf[3];
         for (uint64_t i = 0; i < levelsSize; i++) {
-            // The occupancy for level 'i' is stored at index 'i + 6' in the PageBuffer.
+            // The occupancy for level 'i' is stored at index 'i + 4' in the PageBuffer.
             uint64_t count = pageBuf[i + 4];
             levels.push_back(count);
         }
@@ -80,19 +78,15 @@ int DB::Close() {
 
     // NOTE the structure of meta.sst
 
-    // Indices 0 - 5 of pageBuf are as follows:
+    // Indices 0 - 3 of pageBuf are as follows:
     // 0: Whether or not this uses B tree search (stored as 0 or 1)
     // 1: Bits per entry
-    // 2: Initial directory size
-    // 3: Maximum directory size
-    // 4: Maximum number of pages
-    // 5: number of LSM Tree levels
+    // 2: cache size
+    // 3: number of LSM Tree levels
 
     PageBuffer pageBuf = {0};  // used for writing into meta.sst
     pageBuf[0] = static_cast<uint64_t>(useBTreeSearch);
     pageBuf[1] = bitsPerEntry;
-    // pageBuf[2] = initialDirSize;
-    // pageBuf[3] = maxDirSize;
     pageBuf[2] = cacheSize;
     pageBuf[3] = lsmTreeLevels;
 
@@ -101,7 +95,7 @@ int DB::Close() {
 
     for (uint64_t i = 0; i < lsmTreeLevels; i++) {
         pageBuf[i + 4] =
-            lsmOccupancyLevels[i];  // i + 4 for levels since pageBuf already has first 6 indices with other stuff
+            lsmOccupancyLevels[i];  // i + 4 for levels since pageBuf already has first 4 indices with other stuff
     }
     bufPool->bwrite(METADATA_NUM, 0, pageBuf);  // writing into meta.sst
 
