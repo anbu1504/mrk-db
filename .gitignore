@@ -9,8 +9,8 @@ experiments_get
 experiments_put
 experiments_scan
 testdb
-exp_db_bin_*
-exp_db_btree_*
-exp_put_*
-exp_get_*
-exp_scan_*
+exp_db_bin
+exp_db_btree
+exp_put
+exp_get
+exp_scan
